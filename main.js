@@ -1,53 +1,100 @@
-// Modules to control application life and create native browser window
-const { app, BrowserWindow } = require("electron");
+const electron = require("electron");
+const { app, BrowserWindow, Tray, globalShortcut } = electron;
+
+const isDev = process.env.NODE_ENV === "development";
 const path = require("path");
 
-// Keep a global reference of the window object, if you don't, the window will
-// be closed automatically when the JavaScript object is garbage collected.
-let mainWindow;
+let tray;
+let win;
+
+function getWindowPosition() {
+  const windowBounds = win.getBounds();
+  const trayBounds = tray.getBounds();
+
+  const x = Math.round(
+    trayBounds.x + trayBounds.width / 2 - windowBounds.width / 2
+  );
+  const y = Math.round(trayBounds.y + trayBounds.height + 7);
+
+  return { x, y };
+}
+
+function hideWindow() {
+  win.hide();
+  app.hide();
+  win.setAlwaysOnTop(false);
+  win.webContents.send("hide-window");
+}
+
+function showWindow() {
+  win.show();
+  app.show();
+  win.setAlwaysOnTop(true);
+  win.webContents.send("show-window");
+}
+
+function moveToTray() {
+  const position = getWindowPosition();
+  win.setPosition(position.x, position.y);
+}
+
+function toggleWindow() {
+  if (win.isVisible()) {
+    hideWindow();
+  } else {
+    showWindow();
+  }
+}
+
+function initTray() {
+  tray = new Tray(path.join(__dirname, "cloudTemplate.png"));
+  tray.on("click", toggleWindow);
+}
 
 function createWindow() {
-  // Create the browser window.
-  mainWindow = new BrowserWindow({
-    width: 400,
+  win = new BrowserWindow({
+    width: 300,
     height: 150,
     // webPreferences: {
-      // preload: path.join(__dirname, "preload.js")
+    //   preload: path.join(__dirname, "preload.js")
     // }
+    resizable: false,
+    title: "typeo",
+    maximizable: false,
+    transparent: true,
+    frame: false,
+    show: isDev
   });
 
-  // and load the index.html of the app.
-  mainWindow.loadURL("http://localhost:3000");
+  if (isDev) {
+    win.loadURL("http://localhost:3000");
+  } else {
+    win.loadFile("./public/index.html");
+  }
 
-  // Open the DevTools.
-  // mainWindow.webContents.openDevTools()
+  win.on("closed", () => {
+    win = null;
+  });
 
-  // Emitted when the window is closed.
-  mainWindow.on("closed", function() {
-    // Dereference the window object, usually you would store windows
-    // in an array if your app supports multi windows, this is the time
-    // when you should delete the corresponding element.
-    mainWindow = null;
+  win.on("blur", () => {
+    if (!isDev) hideWindow();
+  });
+
+  win.webContents.on("did-finish-load", () => {
+    moveToTray();
   });
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.on("ready", createWindow);
-
-// Quit when all windows are closed.
-app.on("window-all-closed", function() {
-  // On macOS it is common for applications and their menu bar
-  // to stay active until the user quits explicitly with Cmd + Q
+app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
 
-app.on("activate", function() {
-  // On macOS it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (mainWindow === null) createWindow();
+app.on("activate", () => {
+  if (win === null) createWindow();
 });
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
+app.on("ready", () => {
+  createWindow();
+  initTray();
+  globalShortcut.register("Command+Control+Space", toggleWindow);
+});

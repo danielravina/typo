@@ -1,8 +1,11 @@
+body {
+  background-color: #282c34;
+}
 .App {
   text-align: center;
 }
 
-.App-logo {
+/* .App-logo {
   height: 40vmin;
 }
 
@@ -19,4 +22,4 @@
 
 .App-link {
   color: #09d3ac;
-}
+} */
