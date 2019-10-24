@@ -1,25 +1,39 @@
 body {
   background-color: #282c34;
-}
-.App {
-  text-align: center;
-}
-
-/* .App-logo {
-  height: 40vmin;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.input-wrapper {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  height: 100vh;
 }
 
-.App-link {
-  color: #09d3ac;
-} */
+.main-input {
+  width: 100%;
+  font-size: 23px;
+  padding: 0;
+  margin: 0;
+  z-index: 1;
+  height: 100vh;
+  padding: 9px;
+}
+
+.hidden {
+  font-size: 23px;
+  padding: 0;
+  margin: 0;
+  position: absolute;
+  left: 9999px;
+}
+
+.autocomplete {
+  pointer-events: none;
+  position: absolute;
+  color: grey;
+  background: transparent;
+  border: none;
+  z-index: 2;
+}

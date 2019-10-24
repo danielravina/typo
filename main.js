@@ -14,7 +14,7 @@ function getWindowPosition() {
   const x = Math.round(
     trayBounds.x + trayBounds.width / 2 - windowBounds.width / 2
   );
-  const y = Math.round(trayBounds.y + trayBounds.height + 7);
+  const y = Math.round(trayBounds.y + trayBounds.height);
 
   return { x, y };
 }
@@ -53,8 +53,8 @@ function initTray() {
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 300,
-    height: 150,
+    width: 370,
+    height: 65,
     // webPreferences: {
     //   preload: path.join(__dirname, "preload.js")
     // }
