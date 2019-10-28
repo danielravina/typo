@@ -2,25 +2,28 @@ import React from "react";
 import "./App.css";
 
 import fetchJsonp from "fetch-jsonp";
-import Mousetrap from "mousetrap";
-
-Mousetrap.bind('4', function() { console.log('4'); });
+import titleCase from 'ap-style-title-case'
 
 const SUGGESTIONS_URL =
   "https://suggestqueries.google.com/complete/search?client=firefox&q=";
 
 const defaultState = {
   word: "",
-  suggestion: ""
+  suggestion: "",
+  isTitleized: false
 };
 
 class App extends React.Component {
-  constructor() {
-    super();
-    this.h = null;
-  }
-
   state = defaultState;
+
+  componentDidMount() {
+    window.ipcRenderer.on("window-hidden", () => {
+      this.setState(defaultState);
+    });
+    window.ipcRenderer.on("window-shown", () => {
+      this.input.focus();
+    });
+  }
 
   onInputChange = e => {
     const { value } = e.target;
@@ -28,18 +31,28 @@ class App extends React.Component {
     this.fetchSuggestions(value);
   };
 
+  onKeyUp = e => {
+    switch (e.key) {
+      case "Shift":
+        this.setState({ isTitleized: false });
+        break;
+    }
+  };
+
   onKeyDown = e => {
     switch (e.key) {
+      case "Shift":
+        this.setState({ isTitleized: true });
+        break;
       case "Escape":
         window.ipcRenderer.send("hide");
         this.setState(defaultState);
         break;
       case "Tab":
-        this.completeWord();
-        this.moveCursorToEnd()
+        this.onTabPress();
         break;
       case "Enter":
-        window.ipcRenderer.send("copyClipBoard", this.fullWord);
+        window.ipcRenderer.send("copyClipBoard", this.suggestion);
         window.ipcRenderer.send("hide");
         this.setState(defaultState);
         break;
@@ -48,44 +61,17 @@ class App extends React.Component {
     }
   };
 
-  get suggestionDistance() {
-    if (!this.state.word.length) {
-      return 0;
-    }
-
-    return this.h.offsetWidth + 1;
-  }
-
-  get suggestionCompletion() {
-    return this.state.suggestion.substring(this.state.word.length);
-  }
-
-  get fullWord() {
-    return this.state.word + this.suggestionCompletion;
-  }
-
-  /*
-    When pressing "Tab", the input is selected which degrades the UI
-    this will "deselect" the input and move cursor to the end so user can keep typing
-  */
-  moveCursorToEnd() {
+  onTabPress() {
     setTimeout(() => {
       this.input.focus();
-      var val = this.input.value;
-      this.input.value = '';
-      this.input.value = val;
+      var val = this.state.suggestion;
+      this.input.value = "";
+      this.input.value = val + " ";
     }, 5);
   }
 
-  completeWord() {
-    this.setState({
-      word: this.fullWord,
-      suggestion: ""
-    });
-  }
-
   async fetchSuggestions(value) {
-    if (value.length < 2) {
+    if (!value.length) {
       this.setState({ suggestion: "" });
       return;
     }
@@ -98,37 +84,34 @@ class App extends React.Component {
     });
   }
 
+  get suggestion() {
+    if (this.state.isTitleized) {
+      return titleCase(this.state.suggestion)
+    } else {
+      return this.state.suggestion
+    }
+  }
+
   render() {
     return (
-      <div className="app dark">
-        <span
-          className="hidden"
-          ref={h => { this.h = h; }}
-          dangerouslySetInnerHTML={{
-            __html: this.state.word.replace(/\s/g, "&nbsp;")
-          }}
-        />
+      <div className="app">
+        <div className="suggestion-wrapper">
+          <span className="subtitle"></span>
+          <span className="suggestion-text">
+            {this.suggestion || "..."}
+          </span>
+        </div>
         <div className="input-wrapper">
           <input
-            ref={(r) => this.input = r}
+            ref={r => (this.input = r)}
             className="main-input"
             autoFocus
-            autoBlur
             value={this.state.word}
             onChange={this.onInputChange}
             placeholder="Type Something..."
             onKeyDown={this.onKeyDown}
+            onKeyUp={this.onKeyUp}
           />
-          {this.h && (
-            <input
-              className="autocomplete"
-              disabled
-              style={{
-                transform: `translateX(${this.suggestionDistance}px)`
-              }}
-              value={this.suggestionCompletion}
-            />
-          )}
         </div>
       </div>
     );

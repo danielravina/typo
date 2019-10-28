@@ -3,19 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "electron": "^7.0.0",
+    "ap-style-title-case": "^1.1.0",
+    "electron": "^4.0.7",
     "fetch-jsonp": "^1.1.3",
-    "mousetrap": "^1.6.3",
     "react": "^16.11.0",
     "react-dom": "^16.11.0",
-    "react-scripts": "3.2.0"
+    "react-scripts": "3.2.0",
+    "robotjs": "^0.5.1"
   },
   "scripts": {
     "start": "PORT=9000 react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "electron": "NODE_ENV=development electron main.js"
+    "electron": "NODE_ENV=development electron main.js",
+    "rebuild": "npm rebuild --runtime=electron --target=4.0.7 --disturl=https://atom.io/download/atom-shell --abi=48"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -31,5 +33,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "electron-rebuild": "^1.8.6"
   }
 }

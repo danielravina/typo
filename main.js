@@ -3,7 +3,7 @@ const { clipboard, ipcMain, Menu, app, BrowserWindow, Tray, globalShortcut } = e
 const { version } = require("./package.json");
 const isDev = process.env.NODE_ENV === "development";
 const path = require("path");
-
+var robot = require("robotjs");
 let tray;
 let win;
 
@@ -11,14 +11,14 @@ function hideWindow() {
   win.hide();
   app.hide();
   win.setAlwaysOnTop(false);
-  win.webContents.send("hide-window");
+  win.webContents.send("window-hidden");
 }
 
 function showWindow() {
   win.show();
   app.show();
   win.setAlwaysOnTop(true);
-  win.webContents.send("show-window");
+  win.webContents.send("window-shown");
 }
 
 function toggleWindow() {
@@ -48,8 +48,8 @@ function initTray() {
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 470,
-    height: 70,
+    width: 510,
+    height: 120,
     webPreferences: {
       preload: path.join(__dirname, "preload.js")
     },
@@ -82,9 +82,12 @@ function createWindow() {
 
   ipcMain.on('copyClipBoard', (_, value) => {
     clipboard.writeText(value);
+    setTimeout(() => {
+      robot.typeString(value)
+    }, 50);
   })
 }
-
+// my favourite movie is avengers endgame
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
