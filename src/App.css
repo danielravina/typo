@@ -11,18 +11,23 @@ body {
   height: 100vh;
 }
 
-.main-input {
+.autocomplete, .main-input {
   width: 100%;
-  font-size: 23px;
+  font-size: 24px;
   padding: 0;
   margin: 0;
-  z-index: 1;
   height: 100vh;
-  padding: 9px;
+  padding: 18px;
+  outline: none;
+  border: none;
+}
+
+::placeholder {
+  color: rgb(255,255,255, 0.5);
 }
 
 .hidden {
-  font-size: 23px;
+  font-size: 24px;
   padding: 0;
   margin: 0;
   position: absolute;
@@ -32,8 +37,11 @@ body {
 .autocomplete {
   pointer-events: none;
   position: absolute;
-  color: grey;
+  color: rgb(255,255,255, 0.5);
   background: transparent;
-  border: none;
-  z-index: 2;
+}
+
+.dark .main-input {
+  background-color: #282c34;
+  color: white;
 }

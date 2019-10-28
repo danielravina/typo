@@ -1,23 +1,11 @@
 const electron = require("electron");
-const { app, BrowserWindow, Tray, globalShortcut } = electron;
-
+const { clipboard, ipcMain, Menu, app, BrowserWindow, Tray, globalShortcut } = electron;
+const { version } = require("./package.json");
 const isDev = process.env.NODE_ENV === "development";
 const path = require("path");
 
 let tray;
 let win;
-
-function getWindowPosition() {
-  const windowBounds = win.getBounds();
-  const trayBounds = tray.getBounds();
-
-  const x = Math.round(
-    trayBounds.x + trayBounds.width / 2 - windowBounds.width / 2
-  );
-  const y = Math.round(trayBounds.y + trayBounds.height);
-
-  return { x, y };
-}
 
 function hideWindow() {
   win.hide();
@@ -33,11 +21,6 @@ function showWindow() {
   win.webContents.send("show-window");
 }
 
-function moveToTray() {
-  const position = getWindowPosition();
-  win.setPosition(position.x, position.y);
-}
-
 function toggleWindow() {
   if (win.isVisible()) {
     hideWindow();
@@ -48,28 +31,41 @@ function toggleWindow() {
 
 function initTray() {
   tray = new Tray(path.join(__dirname, "cloudTemplate.png"));
-  tray.on("click", toggleWindow);
+  tray.setToolTip("typo");
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      {
+        label: "Toggle",
+        accelerator: 'Command+Control+Space',
+        click: toggleWindow
+      },
+      { label: `typo v${version}`, enabled: false },
+      { type: 'separator' },
+      { label: `Quit`, click: () => app.quit() }
+    ])
+  );
 }
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 370,
-    height: 65,
-    // webPreferences: {
-    //   preload: path.join(__dirname, "preload.js")
-    // }
+    width: 470,
+    height: 70,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js")
+    },
     resizable: false,
-    title: "typeo",
+    title: "Typo",
     maximizable: false,
     transparent: true,
     frame: false,
-    show: isDev
+    show: isDev,
+    center: true,
   });
 
   if (isDev) {
-    win.loadURL("http://localhost:3000");
+    win.loadURL("http://127.0.0.1:9000");
   } else {
-    win.loadFile("./public/index.html");
+    win.loadFile("./build/index.html");
   }
 
   win.on("closed", () => {
@@ -80,9 +76,13 @@ function createWindow() {
     if (!isDev) hideWindow();
   });
 
-  win.webContents.on("did-finish-load", () => {
-    moveToTray();
-  });
+  ipcMain.on('hide', () => {
+    hideWindow();
+  })
+
+  ipcMain.on('copyClipBoard', (_, value) => {
+    clipboard.writeText(value);
+  })
 }
 
 app.on("window-all-closed", () => {
@@ -96,5 +96,5 @@ app.on("activate", () => {
 app.on("ready", () => {
   createWindow();
   initTray();
-  globalShortcut.register("Command+Control+Space", toggleWindow);
+  globalShortcut.register("Control+Space", toggleWindow);
 });
