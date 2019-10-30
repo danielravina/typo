@@ -1,3 +1,29 @@
+@font-face {
+  font-family: emoji;
+
+  /* Fonts for text outside emoji blocks */
+  src: local('Droid Sans Mono'),
+       local('Lucida Console'),
+       local('Arial Monospaced'),
+       local(Arial);
+}
+
+@font-face {
+  font-family: emoji;
+
+  src: local('Apple Color Emoji'),
+       local('Android Emoji'),
+       local('Segoe UI'),
+       local(EmojiSymbols),
+       local(Symbola),
+       url('./fonts/Symbola-Emoji.eot?#iefix') format('embedded-opentype'),
+       url('./fonts/Symbola-Emoji.woff') format('woff'),
+       url('./fonts/Symbola-Emoji.ttf') format('truetype');
+
+  /* Emoji unicode blocks */
+  unicode-range: U+1F300-1F5FF, U+1F600-1F64F, U+1F680-1F6FF, U+2600-26FF;
+}
+
 body {
   padding: 0;
   margin: 0;
@@ -5,41 +31,69 @@ body {
 }
 
 .suggestion-wrapper {
-  min-height: 70vh;
+  min-height: 69vh;
   margin: 0;
   background: #e9e9e9;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   -webkit-app-region: drag;
 }
 
 .suggestion-text {
   padding-left: 8px;
-  line-height: 28px;
+}
+
+.suggestion-body {
+  padding: 0;
   font-size: 34px;
-  min-height: 28px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+.emoji-wrapper {
+  display: flex;
+}
+
+.emoji {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-width: 55px;
+  margin-right: 3px;
+  line-height: 53px;
+  font-family: emoji;
+}
+
+.emoji.selected {
+  background: #90CAF9;
 }
 
 .suggestion-wrapper .subtitle {
   line-height: 20px;
   padding-left: 8px;
-  color: rgba(0,0,0,0.5);
+  color: #3498db;
+  font-weight: bold;
   font-size: 12px;
+  display: flex;
   align-items: flex-end;
+  height: 30px;
   box-sizing: border-box;
 }
 
 .main-input {
+  box-shadow: inset 0px 1px 8px rgba(0, 0, 0, 0.2);
   width: 100%;
   font-size: 14px;
   padding: 0;
   margin: 0;
   min-height: 30vh;
   padding-left: 8px;
+  padding-right: 8px;
   outline: none;
-  border: 1 px solid white;
+  border: none;
+  /* background: chartreuse; */
 }
 
 
@@ -48,6 +102,7 @@ body {
 }
 
 .dark ::placeholder {
+  font-style: italic;
   color: rgba(255,255,255,0.5);
 }
 
@@ -60,4 +115,8 @@ body {
   background-color: #1b2836;
   border: 1px solid #1b2836;
   color: #dbdbdb;
+}
+
+.locked-char {
+  opacity: 0.5;
 }

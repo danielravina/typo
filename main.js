@@ -48,7 +48,7 @@ function initTray() {
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 510,
+    width: 520,
     height: 120,
     webPreferences: {
       preload: path.join(__dirname, "preload.js")
@@ -83,7 +83,7 @@ function createWindow() {
   ipcMain.on('copyClipBoard', (_, value) => {
     clipboard.writeText(value);
     setTimeout(() => {
-      robot.typeString(value)
+      robot.typeString(value + " ")
     }, 50);
   })
 }
