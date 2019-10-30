@@ -4,7 +4,7 @@ import emoji from "node-emoji";
 import classnames from "classnames";
 import fetchJsonp from "fetch-jsonp";
 import titleCase from "ap-style-title-case";
-
+import loader from "./three-dots.svg";
 const SUGGESTIONS_URL =
   "https://suggestqueries.google.com/complete/search?client=firefox&q=";
 
@@ -13,8 +13,10 @@ const defaultState = {
   suggestion: "",
   isTitleized: false,
   emojis: [],
-  selectedEmojiIndex: 0,
-  mode: "lazy"
+  selectedIndex: 0,
+  mode: "lazy",
+  wordSelection: false,
+  selectionCount: 0
 };
 
 class App extends React.Component {
@@ -36,7 +38,7 @@ class App extends React.Component {
       this.setState({ mode: "emoji" });
       this.fetchEmojis(value);
     } else {
-      this.setState({ mode: "lazy", emojis: [] });
+      this.setState({ mode: "lazy", emojis: [], wordSelection: false, selectedIndex: 0 });
       this.fetchSuggestions(value);
     }
   };
@@ -67,48 +69,69 @@ class App extends React.Component {
         this.onEnterPress();
         break;
       case "ArrowRight":
+        if (this.state.wordSelection) e.preventDefault();
         this.onArrowRight();
         break;
       case "ArrowLeft":
+        if (this.state.wordSelection) e.preventDefault();
         this.onArrowLeft();
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        this.onArrowUp();
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        this.onArrowDown();
         break;
       default:
         break;
     }
   };
 
+  onArrowUp = () => {
+    this.setState({ wordSelection: true });
+  };
+
+  onArrowDown = () => {
+    this.setState({ wordSelection: false, selectedIndex: 0 });
+  };
+
   onArrowLeft = () => {
-    const { emojis, selectedEmojiIndex } = this.state;
-    if (!emojis.length) return
-    if (selectedEmojiIndex > 0) {
-      this.setState({ selectedEmojiIndex: selectedEmojiIndex - 1 });
+    const { selectionCount, selectedIndex } = this.state;
+
+    if (selectedIndex > 0) {
+      this.setState({ selectedIndex: selectedIndex - 1 });
     } else {
-      this.setState({ selectedEmojiIndex: emojis.length - 1 });
+      this.setState({ selectedIndex: selectionCount - 1 });
     }
   };
 
   onArrowRight = () => {
-    const { emojis, selectedEmojiIndex } = this.state;
-    if(!emojis.length) return
-    if (selectedEmojiIndex < emojis.length - 1) {
-      this.setState({ selectedEmojiIndex: selectedEmojiIndex + 1 });
+    const { selectionCount, selectedIndex } = this.state;
+
+    if (selectedIndex < selectionCount - 1) {
+      this.setState({ selectedIndex: selectedIndex + 1 });
     } else {
-      this.setState({ selectedEmojiIndex: 0 });
+      this.setState({ selectedIndex: 0 });
     }
   };
 
   onEnterPress = () => {
-    const { mode, emojis, selectedEmojiIndex } = this.state;
+    const { wordSelection, mode, emojis, selectedIndex } = this.state;
     let target = "";
 
     if (mode === "emoji") {
-      target = emojis[selectedEmojiIndex];
+      target = emojis[selectedIndex];
+    } else if (wordSelection === true) {
+      target = this.suggestion.split(' ')[selectedIndex]
     } else {
       target = this.suggestion;
     }
 
     window.ipcRenderer.send("copyClipBoard", target);
     window.ipcRenderer.send("hide");
+
     this.setState(defaultState);
   };
 
@@ -123,14 +146,22 @@ class App extends React.Component {
   }
 
   fetchEmojis(value) {
-    if (value.length < 2) { // include the ':' which is stripped by node-emoji
-      this.setState({ emojis: [], selectedEmojiIndex: 0 })
-      return
+    if (value.length < 2) {
+      // include the ':' which is stripped by node-emoji
+      this.setState({ emojis: [], selectedIndex: 0 });
+      return;
     }
 
-    let results = emoji.search(value).map(e => e.emoji).slice(0, 8);
+    const results = emoji
+      .search(value)
+      .map(e => e.emoji)
+      .slice(0, 9);
 
-    this.setState({ emojis: results, selectedEmojiIndex: 0 });
+    this.setState({
+      emojis: results,
+      selectedIndex: 0,
+      selectionCount: results.length
+    });
   }
 
   async fetchSuggestions(value) {
@@ -141,10 +172,11 @@ class App extends React.Component {
 
     const response = await fetchJsonp(SUGGESTIONS_URL + value);
     const results = await response.json();
-
+    const suggestion = results[1][0] || "";
     this.setState({
-      suggestion: results[1][0] || "",
-      emojis: []
+      suggestion,
+      emojis: [],
+      selectionCount: suggestion.split(" ").length
     });
   }
 
@@ -157,7 +189,24 @@ class App extends React.Component {
   }
 
   renderSuggestion() {
-    return <span className="suggestion-text">{this.suggestion || '...'}</span>;
+    if (!this.suggestion) return <img src={loader} class="suggestion-loader" />;
+    return (
+      <span className="suggestion-text">
+        {this.suggestion.split(' ').map((w, i) => (
+          <>
+            <span
+              className={classnames("word", {
+                selected:
+                  this.state.wordSelection && i === this.state.selectedIndex
+              })}
+            >
+              {w}
+            </span>
+            <span className="spacer" />
+          </>
+        ))}
+      </span>
+    );
   }
 
   renderEmojis() {
@@ -169,7 +218,7 @@ class App extends React.Component {
           <span
             key={i}
             className={classnames("emoji", {
-              selected: i === this.state.selectedEmojiIndex
+              selected: i === this.state.selectedIndex
             })}
             dangerouslySetInnerHTML={{ __html: e }}
           />

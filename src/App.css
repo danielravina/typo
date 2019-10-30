@@ -41,16 +41,18 @@ body {
 }
 
 .suggestion-text {
-  padding-left: 8px;
+  padding-left: 15px;
+  color: #444444
 }
 
 .suggestion-body {
   padding: 0;
-  font-size: 34px;
+  font-size: 40px;
   flex: 1;
   display: flex;
   align-items: center;
 }
+
 .emoji-wrapper {
   display: flex;
 }
@@ -66,13 +68,16 @@ body {
   font-family: emoji;
 }
 
-.emoji.selected {
+.selected {
   background: #90CAF9;
 }
 
+.dark .emoji.selected {
+  background: #3d3d3d;
+}
 .suggestion-wrapper .subtitle {
   line-height: 20px;
-  padding-left: 8px;
+  padding-left: 15px;
   color: #3498db;
   font-weight: bold;
   font-size: 12px;
@@ -85,20 +90,23 @@ body {
 .main-input {
   box-shadow: inset 0px 1px 8px rgba(0, 0, 0, 0.2);
   width: 100%;
-  font-size: 14px;
+  font-size: 15px;
   padding: 0;
   margin: 0;
   min-height: 30vh;
-  padding-left: 8px;
+  padding-left: 15px;
   padding-right: 8px;
   outline: none;
   border: none;
-  /* background: chartreuse; */
 }
 
 
 .dark .subtitle {
   color: #9CDCFE;
+}
+
+::placeholder {
+  font-style: italic;
 }
 
 .dark ::placeholder {
@@ -119,4 +127,20 @@ body {
 
 .locked-char {
   opacity: 0.5;
+}
+
+.suggestion-loader {
+  width: 40px;
+  height: auto;
+  margin-left: 15px;
+  margin-top: 15px;
+}
+
+.spacer {
+  width: 12px;
+  display: inline-block;
+}
+
+.word {
+  display: inline-block;
 }
