@@ -48,7 +48,7 @@ function initTray() {
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 550,
+    width: 553,
     height: 144,
     webPreferences: {
       preload: path.join(__dirname, "preload.js")

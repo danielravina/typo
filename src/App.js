@@ -1,22 +1,27 @@
-import React from "react";
 import "./App.css";
+
+import React from "react";
 import emoji from "node-emoji";
 import classnames from "classnames";
 import fetchJsonp from "fetch-jsonp";
 import titleCase from "ap-style-title-case";
-import loader from "./three-dots.svg";
+
+import Highlighter from "react-highlight-words";
+
 const SUGGESTIONS_URL =
   "https://suggestqueries.google.com/complete/search?client=firefox&q=";
+
+const defaultEmojis = ["👍", "😂", "🔥", "🙂", "🎉", "😭", "😍", "💥", "🤔"];
 
 const defaultState = {
   word: "",
   suggestion: "",
   isTitleized: false,
-  emojis: [],
+  emojis: defaultEmojis,
   selectedIndex: 0,
   mode: "lazy",
   wordSelection: false,
-  selectionCount: 0
+  selectionCount: defaultEmojis.length
 };
 
 class App extends React.Component {
@@ -35,10 +40,16 @@ class App extends React.Component {
     const { value } = e.target;
     this.setState({ word: value });
     if (value.charAt(0) === ":") {
-      this.setState({ mode: "emoji" });
+      this.setState({ mode: "emoji", emojis: defaultEmojis, selectedIndex: 0 });
       this.fetchEmojis(value);
     } else {
-      this.setState({ mode: "lazy", emojis: [], wordSelection: false, selectedIndex: 0 });
+      this.setState({
+        mode: "lazy",
+        emojis: defaultEmojis,
+        wordSelection: false,
+        selectedIndex: 0,
+        selectionCount: defaultEmojis.length
+      });
       this.fetchSuggestions(value);
     }
   };
@@ -124,7 +135,7 @@ class App extends React.Component {
     if (mode === "emoji") {
       target = emojis[selectedIndex];
     } else if (wordSelection === true) {
-      target = this.suggestion.split(' ')[selectedIndex]
+      target = this.suggestion.split(" ")[selectedIndex];
     } else {
       target = this.suggestion;
     }
@@ -141,14 +152,17 @@ class App extends React.Component {
       var val = this.state.suggestion + " ";
       this.input.value = "";
       this.input.value = val;
-      this.setState({ word: val });
+      this.setState({ word: val, wordSelection: false });
     }, 5);
   }
 
   fetchEmojis(value) {
     if (value.length < 2) {
       // include the ':' which is stripped by node-emoji
-      this.setState({ emojis: [], selectedIndex: 0 });
+      this.setState({
+        selectedIndex: 0,
+        selectionCount: defaultEmojis.length
+      });
       return;
     }
 
@@ -175,7 +189,7 @@ class App extends React.Component {
     const suggestion = results[1][0] || "";
     this.setState({
       suggestion,
-      emojis: [],
+      emojis: defaultEmojis,
       selectionCount: suggestion.split(" ").length
     });
   }
@@ -188,11 +202,33 @@ class App extends React.Component {
     }
   }
 
-  renderSuggestion() {
-    if (!this.suggestion) return <img src={loader} class="suggestion-loader" />;
+  shouldHighlight() {
+    return !this.state.wordSelection;
+  }
+
+  isWordMatchSuggestion() {
     return (
-      <span className="suggestion-text">
-        {this.suggestion.split(' ').map((w, i) => (
+      this.suggestion.trim().toLowerCase() ===
+      this.state.word.trim().toLowerCase() ||
+      this.state.isTitleized //
+    );
+  }
+
+  renderSuggestion() {
+    if (!this.suggestion)
+      return (<span className="waiting animated infinite pulse">Waiting For Input...</span>)
+
+    if (this.isWordMatchSuggestion() && !this.state.wordSelection) {
+      return (
+        <span className="suggestion-text animated fadeIn selected">
+          {this.suggestion}
+        </span>
+      );
+    }
+
+    return (
+      <span className="suggestion-text animated fadeIn">
+        {this.suggestion.split(" ").map((w, i) => (
           <>
             <span
               className={classnames("word", {
@@ -200,7 +236,13 @@ class App extends React.Component {
                   this.state.wordSelection && i === this.state.selectedIndex
               })}
             >
-              {w}
+              <Highlighter
+                highlightClassName={"highlighted"}
+                searchWords={
+                  this.shouldHighlight() ? this.state.word.split("") : []
+                }
+                textToHighlight={w}
+              />
             </span>
             <span className="spacer" />
           </>
@@ -210,14 +252,13 @@ class App extends React.Component {
   }
 
   renderEmojis() {
-    if (!this.state.emojis.length) return null;
-
+    if (this.state.mode !== "emoji") return null;
     return (
       <div className="emoji-wrapper">
         {this.state.emojis.map((e, i) => (
           <span
             key={i}
-            className={classnames("emoji", {
+            className={classnames("animated", "bounceIn", "emoji", {
               selected: i === this.state.selectedIndex
             })}
             dangerouslySetInnerHTML={{ __html: e }}
