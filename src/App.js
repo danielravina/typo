@@ -1,13 +1,13 @@
-import "./App.css";
+import "./App.scss";
 
 import React from "react";
 import emoji from "node-emoji";
 import classnames from "classnames";
 import fetchJsonp from "fetch-jsonp";
 import titleCase from "ap-style-title-case";
-
+import RegexEscape from "regex-escape";
 import Highlighter from "react-highlight-words";
-
+import fuzzy from "fuzzy";
 const SUGGESTIONS_URL =
   "https://suggestqueries.google.com/complete/search?client=firefox&q=";
 
@@ -21,16 +21,15 @@ const defaultState = {
   selectedIndex: 0,
   mode: "lazy",
   wordSelection: false,
-  selectionCount: defaultEmojis.length
+  selectionCount: defaultEmojis.length,
+  // colorTheme: "dark",
+  suggestionHistory: []
 };
 
 class App extends React.Component {
   state = defaultState;
 
   componentDidMount() {
-    window.ipcRenderer.on("window-hidden", () => {
-      this.setState(defaultState);
-    });
     window.ipcRenderer.on("window-shown", () => {
       this.input.focus();
     });
@@ -129,7 +128,14 @@ class App extends React.Component {
   };
 
   onEnterPress = () => {
-    const { wordSelection, mode, emojis, selectedIndex } = this.state;
+    const {
+      wordSelection,
+      mode,
+      emojis,
+      selectedIndex,
+      suggestionHistory
+    } = this.state;
+
     let target = "";
 
     if (mode === "emoji") {
@@ -142,8 +148,13 @@ class App extends React.Component {
 
     window.ipcRenderer.send("copyClipBoard", target);
     window.ipcRenderer.send("hide");
+    const newHistory = Array.from(new Set([...suggestionHistory, target]));
+    this.setState({
+      ...defaultState,
+      suggestionHistory: newHistory
+    });
 
-    this.setState(defaultState);
+    console.log(this.state.suggestionHistory);
   };
 
   onTabPress() {
@@ -184,9 +195,20 @@ class App extends React.Component {
       return;
     }
 
-    const response = await fetchJsonp(SUGGESTIONS_URL + value);
-    const results = await response.json();
-    const suggestion = results[1][0] || "";
+    let suggestion;
+
+    const history = fuzzy
+      .filter(value, this.state.suggestionHistory)
+      .map(s => s.original);
+
+    if (history.length) {
+      suggestion = history[0];
+    } else {
+      const response = await fetchJsonp(SUGGESTIONS_URL + value);
+      const results = await response.json();
+      suggestion = results[1][0] || "";
+    }
+
     this.setState({
       suggestion,
       emojis: defaultEmojis,
@@ -209,14 +231,17 @@ class App extends React.Component {
   isWordMatchSuggestion() {
     return (
       this.suggestion.trim().toLowerCase() ===
-      this.state.word.trim().toLowerCase() ||
-      this.state.isTitleized //
+        this.state.word.trim().toLowerCase() || this.state.isTitleized //
     );
   }
 
   renderSuggestion() {
     if (!this.suggestion)
-      return (<span className="waiting animated infinite pulse">Waiting For Input...</span>)
+      return (
+        <span className="waiting animated infinite pulse">
+          Waiting For Input...
+        </span>
+      );
 
     if (this.isWordMatchSuggestion() && !this.state.wordSelection) {
       return (
@@ -237,9 +262,11 @@ class App extends React.Component {
               })}
             >
               <Highlighter
-                highlightClassName={"highlighted"}
+                highlightClassName={"selected"}
                 searchWords={
-                  this.shouldHighlight() ? this.state.word.split("") : []
+                  this.shouldHighlight()
+                    ? this.state.word.split("").map(RegexEscape)
+                    : []
                 }
                 textToHighlight={w}
               />
@@ -270,7 +297,7 @@ class App extends React.Component {
 
   render() {
     return (
-      <div className="app">
+      <div className={`app ${this.state.colorTheme}`}>
         <div className="suggestion-wrapper">
           <span className="subtitle">{titleCase(this.state.mode)} Mode</span>
           <div className="suggestion-body">
@@ -285,7 +312,7 @@ class App extends React.Component {
             disabled={this.state.locked}
             value={this.state.word}
             onChange={this.onInputChange}
-            placeholder="Type Something..."
+            placeholder="Start typing to see results..."
             onKeyDown={this.onKeyDown}
             onKeyUp={this.onKeyUp}
           />

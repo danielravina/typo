@@ -13,15 +13,19 @@
 @font-face {
   font-family: ProximaNova;
   font-weight: bold;
-  src:
-    url('./fonts/ProximaNova-Sbold.otf')
+  src: url('./fonts/ProximaNova-Bold.otf')
 }
 
 @font-face {
   font-family: ProximaNova;
   font-weight: normal;
-  src:
-    url('./fonts/ProximaNova-Reg-webfont.ttf') format('truetype');
+  src: url('./fonts/ProximaNova-Reg-webfont.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: ProximaNova;
+  font-weight: 600;
+  src: url('./fonts/ProximaNova-Sbold.otf');
 }
 
 @font-face {
@@ -40,16 +44,44 @@
   unicode-range: U+1F300-1F5FF, U+1F600-1F64F, U+1F680-1F6FF, U+2600-26FF;
 }
 
+.dark.app {
+  --bg: #303841;
+  --fg: #3a4750;
+  --primary: #f6c90e;
+  --text: #eeeeee;
+}
+
+.app {
+  --bg: #eeeeee;
+  --fg: #dad6d6;
+  --primary: #1089ff;
+  --text: #23374d;
+
+  background: var(--bg);
+  color: var(--text);
+}
+
+.dark ::placeholder {
+  color: rgba(238, 238, 238, 0.7);
+}
+
+::placeholder {
+  color: rgba(35, 55, 77, 0.7);
+}
+
 body {
   padding: 0;
   margin: 0;
   overflow: hidden;
 }
 
+.app {
+  background: var(--bg);
+}
+
 .suggestion-wrapper {
-  min-height: 69vh;
+  min-height: 68vh;
   margin: 0;
-  background: #e9e9e9;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -58,11 +90,10 @@ body {
 
 .suggestion-text {
   font-family: ProximaNova;
-  font-weight: bold;
-  color: #444444;
-  font-size: 40px;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 35px;
   animation-duration: .2s;
-  padding: 0 12px;
 }
 
 .suggestion-body {
@@ -78,7 +109,7 @@ body {
 }
 
 .emoji {
-  border: 0.7px solid transparent; /* make sure emoji doesn't move on selection */
+
   font-size: 40px;
   animation-duration: .5s;
   display: flex;
@@ -91,45 +122,30 @@ body {
 }
 
 .selected {
-  background: rgba(144, 202, 249, 0.4);
-  border: 0.7px dashed rgba(0,0,0,0.3);
-  padding: 4px;
   position: relative;
-}
-
-.emoji.selected {
-  padding: 0;
+  background: var(--fg);
+  color: var(--text);
 }
 
 .suggestion-text.selected:before, .word.selected:before {
   content: 'Copy';
   position: absolute;
-  top: 0;
-  left: 0;
+  top: -8px;
+  left: -1px;
   z-index: 33;
   font-size: 11px;
-  background: #fcfcfc;
-  opacity: 0.7;
+  background: var(--primary);
+  color: var(--bg);
   padding: 1px 8px 1px 4px;
-
-}
-
-.highlighted {
-  background: none;
-  color: #444444;
-  background: rgba(144, 202, 249, 0.5);
-  border-bottom: 1px dashed rgba(0,0,0,0.3);
-}
-
-.dark .emoji.selected {
-  background: #3d3d3d;
+  transition: all .3s ease;
 }
 
 .suggestion-wrapper .subtitle {
+  cursor: default;
   font-family: ProximaNova;
   line-height: 20px;
-  color: #3498db;
-  /* font-weight: bold; */
+  color: var(--primary);
+  font-weight: bold;
   font-size: 15px;
   display: flex;
   align-items: flex-end;
@@ -139,38 +155,20 @@ body {
 }
 
 .main-input {
+  background: var(--fg);
+  color: var(--text);
   z-index: 7;
   box-shadow: inset 0px 1px 8px rgba(0, 0, 0, 0.2);
   width: 100%;
-  font-size: 15px;
+  font-size: 16px;
   padding: 0;
   margin: 0;
-  min-height: 30vh;
+  min-height: 32vh;
   padding-right: 8px;
   padding-left: 12px;
   outline: none;
   border: none;
   font-family: ProximaNova;
-}
-
-
-.dark .subtitle {
-  color: #9CDCFE;
-}
-
-.dark ::placeholder {
-  color: rgba(255,255,255,0.5);
-}
-
-.dark .suggestion-wrapper {
-  background-color: #141d26;
-  color: white;
-}
-
-.dark .main-input {
-  background-color: #1b2836;
-  border: 1px solid #1b2836;
-  color: #dbdbdb;
 }
 
 .locked-char {
@@ -182,16 +180,13 @@ body {
 }
 
 .spacer {
-  width: 7px;
+  width: 9px;
   display: inline-block;
 }
 
 .word {
   display: inline-block;
-}
-
-.smaller {
-  font-size:
+  border: 1px solid transparent;
 }
 
 .waiting {

@@ -8,11 +8,14 @@
     "classnames": "^2.2.6",
     "electron": "^4.0.7",
     "fetch-jsonp": "^1.1.3",
+    "fuzzy": "^0.1.3",
     "node-emoji": "github:alignmentdigital/node-emoji",
+    "node-sass": "^4.13.0",
     "react": "^16.11.0",
     "react-dom": "^16.11.0",
     "react-highlight-words": "^0.16.0",
     "react-scripts": "3.2.0",
+    "regex-escape": "^3.4.9",
     "robotjs": "^0.5.1"
   },
   "scripts": {

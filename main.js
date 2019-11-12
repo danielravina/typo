@@ -12,13 +12,17 @@ function hideWindow() {
   app.hide();
   win.setAlwaysOnTop(false);
   win.webContents.send("window-hidden");
+  win.setVisibleOnAllWorkspaces(false);
+  win.setFullScreenable(true);
 }
 
 function showWindow() {
   win.show();
   app.show();
-  win.setAlwaysOnTop(true);
   win.webContents.send("window-shown");
+  win.setAlwaysOnTop(true, "floating");
+  win.setVisibleOnAllWorkspaces(true);
+  win.setFullScreenable(false);
 }
 
 function toggleWindow() {
@@ -48,13 +52,13 @@ function initTray() {
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 553,
+    width: 533,
     height: 144,
     webPreferences: {
       preload: path.join(__dirname, "preload.js")
     },
     resizable: false,
-    title: "Typo",
+    title: "typo",
     maximizable: false,
     transparent: true,
     frame: false,
@@ -97,6 +101,7 @@ app.on("activate", () => {
 });
 
 app.on("ready", () => {
+  app.dock.hide();
   createWindow();
   initTray();
   globalShortcut.register("Control+Space", toggleWindow);
