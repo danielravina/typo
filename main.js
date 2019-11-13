@@ -1,11 +1,23 @@
 const electron = require("electron");
-const { clipboard, ipcMain, Menu, app, BrowserWindow, Tray, globalShortcut } = electron;
+const {
+  clipboard,
+  ipcMain,
+  Menu,
+  app,
+  BrowserWindow,
+  Tray,
+  globalShortcut
+} = electron;
+
 const { version } = require("./package.json");
 const isDev = process.env.NODE_ENV === "development";
 const path = require("path");
-var robot = require("robotjs");
+const robot = require("robotjs");
+const axios = require("axios");
+// const cheerio = require("cheerio");
 let tray;
 let win;
+let extraWin;
 
 function hideWindow() {
   win.hide();
@@ -40,11 +52,11 @@ function initTray() {
     Menu.buildFromTemplate([
       {
         label: "Toggle",
-        accelerator: 'Command+Control+Space',
+        accelerator: "Command+Control+Space",
         click: toggleWindow
       },
       { label: `typo v${version}`, enabled: false },
-      { type: 'separator' },
+      { type: "separator" },
       { label: `Quit`, click: () => app.quit() }
     ])
   );
@@ -52,18 +64,18 @@ function initTray() {
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 533,
-    height: 144,
+    width: 520,
+    height: 185,
     webPreferences: {
       preload: path.join(__dirname, "preload.js")
     },
-    resizable: false,
+    resizable: true,
     title: "typo",
     maximizable: false,
     transparent: true,
     frame: false,
     show: isDev,
-    center: true,
+    center: true
   });
 
   if (isDev) {
@@ -80,17 +92,45 @@ function createWindow() {
     if (!isDev) hideWindow();
   });
 
-  ipcMain.on('hide', () => {
+  ipcMain.on("hide", () => {
     hideWindow();
-  })
+  });
 
-  ipcMain.on('copyClipBoard', (_, value) => {
+  ipcMain.on("copyClipBoard", (_, value) => {
     clipboard.writeText(value);
     setTimeout(() => {
-      robot.typeString(value)
+      robot.typeString(value);
     }, 50);
-  })
+  });
+
+  ipcMain.on("openExternal", async (_, { value, source }) => {
+    extraWin && extraWin.close();
+
+    const { data } = await axios(
+      `https://www.google.ca/search?q=site%3A${source}+${value}&sourceid=chrome&ie=UTF-8`
+    );
+
+    const match = data.match(/url\?q=([a-zA-z:\/\/\.-]*)/);
+    const link = match[1];
+
+    extraWin = new BrowserWindow({
+      parent: win,
+      width: 520,
+      height: 520,
+      resizable: false,
+      maximizable: false,
+      movable: false,
+      title: "Loading..."
+    });
+
+    const [x, y] = win.getPosition();
+    const [width, height] = win.getSize();
+
+    extraWin.loadURL(link);
+    extraWin.setPosition(x, y + height, false);
+  });
 }
+
 // my favourite movie is avengers endgame
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();

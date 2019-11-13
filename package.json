@@ -5,6 +5,8 @@
   "dependencies": {
     "animate.css": "^3.7.2",
     "ap-style-title-case": "^1.1.0",
+    "axios": "^0.19.0",
+    "cheerio": "^1.0.0-rc.3",
     "classnames": "^2.2.6",
     "electron": "^4.0.7",
     "fetch-jsonp": "^1.1.3",

@@ -8,6 +8,9 @@ import titleCase from "ap-style-title-case";
 import RegexEscape from "regex-escape";
 import Highlighter from "react-highlight-words";
 import fuzzy from "fuzzy";
+import logo from "./images/logo.svg";
+import logoBright from "./images/logo-bright.svg";
+
 const SUGGESTIONS_URL =
   "https://suggestqueries.google.com/complete/search?client=firefox&q=";
 
@@ -22,7 +25,7 @@ const defaultState = {
   mode: "lazy",
   wordSelection: false,
   selectionCount: defaultEmojis.length,
-  // colorTheme: "dark",
+  colorTheme: "dark",
   suggestionHistory: []
 };
 
@@ -148,13 +151,13 @@ class App extends React.Component {
 
     window.ipcRenderer.send("copyClipBoard", target);
     window.ipcRenderer.send("hide");
-    const newHistory = Array.from(new Set([...suggestionHistory, target]));
+    const newHistory = Array.from(
+      new Set([...suggestionHistory, target.toLowerCase()])
+    );
     this.setState({
       ...defaultState,
       suggestionHistory: newHistory
     });
-
-    console.log(this.state.suggestionHistory);
   };
 
   onTabPress() {
@@ -236,23 +239,26 @@ class App extends React.Component {
   }
 
   renderSuggestion() {
-    if (!this.suggestion)
-      return (
-        <span className="waiting animated infinite pulse">
-          Waiting For Input...
-        </span>
-      );
+    const twoLines = this.suggestion.length > 20;
 
     if (this.isWordMatchSuggestion() && !this.state.wordSelection) {
       return (
-        <span className="suggestion-text animated fadeIn selected">
+        <span
+          className={classnames("suggestion-text animated fadeIn selected", {
+            reduced: twoLines
+          })}
+        >
           {this.suggestion}
         </span>
       );
     }
 
     return (
-      <span className="suggestion-text animated fadeIn">
+      <span
+        className={classnames("suggestion-text animated fadeIn", {
+          reduced: twoLines
+        })}
+      >
         {this.suggestion.split(" ").map((w, i) => (
           <>
             <span
@@ -295,14 +301,38 @@ class App extends React.Component {
     );
   }
 
+  render;
+
   render() {
     return (
       <div className={`app ${this.state.colorTheme}`}>
+        <header>
+          <button
+            onClick={() => {
+              window.ipcRenderer.send("openExternal", {
+                value: this.state.suggestion,
+                source: "wikipedia.org"
+                // source: "thesaurus.com"
+                // source: "dictionary.com"
+                // source: "stackoverflow.com"
+                // source: "youtube.com"
+              });
+            }}
+          >
+            Wikipedia
+          </button>
+        </header>
         <div className="suggestion-wrapper">
-          <span className="subtitle">{titleCase(this.state.mode)} Mode</span>
-          <div className="suggestion-body">
-            {this.renderEmojis() || this.renderSuggestion()}
-          </div>
+          {this.suggestion || this.state.mode === "emoji" ? (
+            <div className="suggestion-body">
+              {this.renderEmojis() || this.renderSuggestion()}
+            </div>
+          ) : (
+            <div className="logo-wrapper animated fadeIn faster">
+              <img src={this.state.colorTheme === "dark" ? logoBright : logo} />
+              <small>Start typing to see results...</small>
+            </div>
+          )}
         </div>
         <div className="input-wrapper">
           <input
@@ -312,8 +342,8 @@ class App extends React.Component {
             disabled={this.state.locked}
             value={this.state.word}
             onChange={this.onInputChange}
-            placeholder="Start typing to see results..."
             onKeyDown={this.onKeyDown}
+            placeholder="Type Whatever"
             onKeyUp={this.onKeyUp}
           />
         </div>

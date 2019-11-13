@@ -1,44 +1,39 @@
-@import url('~animate.css/animate.min.css');
+@import url("~animate.css/animate.min.css");
 
 @font-face {
   font-family: emoji;
 
   /* Fonts for text outside emoji blocks */
-  src: local('Droid Sans Mono'),
-       local('Lucida Console'),
-       local('Arial Monospaced'),
-       local(Arial);
+  src: local("Droid Sans Mono"), local("Lucida Console"),
+    local("Arial Monospaced"), local(Arial);
 }
 
 @font-face {
   font-family: ProximaNova;
   font-weight: bold;
-  src: url('./fonts/ProximaNova-Bold.otf')
+  src: url("./fonts/ProximaNova-Bold.otf");
 }
 
 @font-face {
   font-family: ProximaNova;
   font-weight: normal;
-  src: url('./fonts/ProximaNova-Reg-webfont.ttf') format('truetype');
+  src: url("./fonts/ProximaNova-Reg-webfont.ttf") format("truetype");
 }
 
 @font-face {
   font-family: ProximaNova;
   font-weight: 600;
-  src: url('./fonts/ProximaNova-Sbold.otf');
+  src: url("./fonts/ProximaNova-Sbold.otf");
 }
 
 @font-face {
   font-family: emoji;
 
-  src: local('Apple Color Emoji'),
-       local('Android Emoji'),
-       local('Segoe UI'),
-       local(EmojiSymbols),
-       local(Symbola),
-       url('./fonts/Symbola-Emoji.eot?#iefix') format('embedded-opentype'),
-       url('./fonts/Symbola-Emoji.woff') format('woff'),
-       url('./fonts/Symbola-Emoji.ttf') format('truetype');
+  src: local("Apple Color Emoji"), local("Android Emoji"), local("Segoe UI"),
+    local(EmojiSymbols), local(Symbola),
+    url("./fonts/Symbola-Emoji.eot?#iefix") format("embedded-opentype"),
+    url("./fonts/Symbola-Emoji.woff") format("woff"),
+    url("./fonts/Symbola-Emoji.ttf") format("truetype");
 
   /* Emoji unicode blocks */
   unicode-range: U+1F300-1F5FF, U+1F600-1F64F, U+1F680-1F6FF, U+2600-26FF;
@@ -52,7 +47,7 @@
 }
 
 .app {
-  --bg: #eeeeee;
+  --bg: white;
   --fg: #dad6d6;
   --primary: #1089ff;
   --text: #23374d;
@@ -79,8 +74,19 @@ body {
   background: var(--bg);
 }
 
+header {
+  height: 20vh;
+  -webkit-app-region: drag;
+}
+
 .suggestion-wrapper {
-  min-height: 68vh;
+  height: 55vh;
+}
+.main-input {
+  height: 25vh;
+}
+
+.suggestion-wrapper {
   margin: 0;
   box-sizing: border-box;
   display: flex;
@@ -92,16 +98,19 @@ body {
   font-family: ProximaNova;
   font-weight: 600;
   color: var(--text);
-  font-size: 35px;
-  animation-duration: .2s;
+  font-size: 38px;
+  animation-duration: 0.2s;
+  transition: font-size 0.14spider man into the spider verse 2s ease;
+  &.reduced {
+    font-size: 32px;
+  }
 }
 
 .suggestion-body {
-  padding: 0;
-  flex: 1;
-  display: flex;
+  padding: 15px 12px;
+  height: 100%;
   align-items: center;
-  justify-content: center;
+  display: flex;
 }
 
 .emoji-wrapper {
@@ -109,9 +118,8 @@ body {
 }
 
 .emoji {
-
   font-size: 40px;
-  animation-duration: .5s;
+  animation-duration: 0.5s;
   display: flex;
   flex: 1;
   align-items: center;
@@ -127,8 +135,9 @@ body {
   color: var(--text);
 }
 
-.suggestion-text.selected:before, .word.selected:before {
-  content: 'Copy';
+.suggestion-text.selected:before,
+.word.selected:before {
+  content: "Copy";
   position: absolute;
   top: -8px;
   left: -1px;
@@ -137,25 +146,11 @@ body {
   background: var(--primary);
   color: var(--bg);
   padding: 1px 8px 1px 4px;
-  transition: all .3s ease;
-}
-
-.suggestion-wrapper .subtitle {
-  cursor: default;
-  font-family: ProximaNova;
-  line-height: 20px;
-  color: var(--primary);
-  font-weight: bold;
-  font-size: 15px;
-  display: flex;
-  align-items: flex-end;
-  height: 30px;
-  box-sizing: border-box;
-  padding-left: 12px;
+  transition: all 0.3s ease;
 }
 
 .main-input {
-  background: var(--fg);
+  background: var(--bg);
   color: var(--text);
   z-index: 7;
   box-shadow: inset 0px 1px 8px rgba(0, 0, 0, 0.2);
@@ -163,7 +158,6 @@ body {
   font-size: 16px;
   padding: 0;
   margin: 0;
-  min-height: 32vh;
   padding-right: 8px;
   padding-left: 12px;
   outline: none;
@@ -180,7 +174,7 @@ body {
 }
 
 .spacer {
-  width: 9px;
+  width: 8px;
   display: inline-block;
 }
 
@@ -189,7 +183,17 @@ body {
   border: 1px solid transparent;
 }
 
-.waiting {
-  font-size: 19px;
-  font-family: ProximaNova;
+.logo-wrapper {
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  img {
+    width: 130px;
+    margin-bottom: 8px;
+  }
+  small {
+    color: var(--primary);
+  }
 }
