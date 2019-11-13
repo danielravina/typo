@@ -104,8 +104,6 @@ function createWindow() {
   });
 
   ipcMain.on("openExternal", async (_, { value, source }) => {
-    extraWin && extraWin.close();
-
     const { data } = await axios(
       `https://www.google.ca/search?q=site%3A${source}+${value}&sourceid=chrome&ie=UTF-8`
     );
@@ -113,25 +111,38 @@ function createWindow() {
     const match = data.match(/url\?q=([a-zA-z:\/\/\.-]*)/);
     const link = match[1];
 
-    extraWin = new BrowserWindow({
-      parent: win,
-      width: 520,
-      height: 520,
-      resizable: false,
-      maximizable: false,
-      movable: false,
-      title: "Loading..."
-    });
+    if (!extraWin) {
+      extraWin = new BrowserWindow({
+        parent: win,
+        width: 520,
+        height: 520,
+        resizable: false,
+        maximizable: false,
+        minimizable: false,
+        movable: false,
+        title: "Loading..."
+        transparent: true,
+        frame: false
+      });
+      extraWin.on("close", e => {
+        e.preventDefault();
+        extraWin.hide();
+        extraWin.loadFile("./");
+      });
+    } else {
+      extraWin.loadURL("");
+    }
 
     const [x, y] = win.getPosition();
     const [width, height] = win.getSize();
 
+    extraWin.show();
     extraWin.loadURL(link);
     extraWin.setPosition(x, y + height, false);
+    extraWin.on();
   });
 }
 
-// my favourite movie is avengers endgame
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });

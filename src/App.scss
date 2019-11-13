@@ -98,9 +98,8 @@ header {
   font-family: ProximaNova;
   font-weight: 600;
   color: var(--text);
-  font-size: 38px;
+  font-size: 40px;
   animation-duration: 0.2s;
-  transition: font-size 0.14spider man into the spider verse 2s ease;
   &.reduced {
     font-size: 32px;
   }
@@ -137,7 +136,7 @@ header {
 
 .suggestion-text.selected:before,
 .word.selected:before {
-  content: "Copy";
+  content: "Selected";
   position: absolute;
   top: -8px;
   left: -1px;

@@ -130,24 +130,22 @@ class App extends React.Component {
     }
   };
 
-  onEnterPress = () => {
-    const {
-      wordSelection,
-      mode,
-      emojis,
-      selectedIndex,
-      suggestionHistory
-    } = this.state;
-
-    let target = "";
+  get selectedWord() {
+    const { wordSelection, mode, emojis, selectedIndex } = this.state;
 
     if (mode === "emoji") {
-      target = emojis[selectedIndex];
+      return emojis[selectedIndex];
     } else if (wordSelection === true) {
-      target = this.suggestion.split(" ")[selectedIndex];
+      return this.suggestion.split(" ")[selectedIndex];
     } else {
-      target = this.suggestion;
+      return this.suggestion;
     }
+  }
+
+  onEnterPress = () => {
+    const { suggestionHistory } = this.state;
+
+    let target = this.selectedWord;
 
     window.ipcRenderer.send("copyClipBoard", target);
     window.ipcRenderer.send("hide");
@@ -310,7 +308,7 @@ class App extends React.Component {
           <button
             onClick={() => {
               window.ipcRenderer.send("openExternal", {
-                value: this.state.suggestion,
+                value: this.selectedWord,
                 source: "wikipedia.org"
                 // source: "thesaurus.com"
                 // source: "dictionary.com"
