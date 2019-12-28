@@ -1,4 +1,5 @@
 @import url("~animate.css/animate.min.css");
+@import url("https://fonts.googleapis.com/icon?family=Material+Icons");
 
 @font-face {
   font-family: emoji;
@@ -40,6 +41,7 @@
 }
 
 .dark.app {
+  --context-menu: #3a4750;
   --bg: #303841;
   --fg: #3a4750;
   --primary: #f6c90e;
@@ -47,6 +49,7 @@
 }
 
 .app {
+  --context-menu: white;
   --bg: white;
   --fg: #dad6d6;
   --primary: #1089ff;
@@ -74,16 +77,12 @@ body {
   background: var(--bg);
 }
 
-header {
-  height: 20vh;
-  -webkit-app-region: drag;
+.suggestion-wrapper {
+  height: 85vh;
 }
 
-.suggestion-wrapper {
-  height: 55vh;
-}
-.main-input {
-  height: 25vh;
+.input-wrapper {
+  height: 15vh;
 }
 
 .suggestion-wrapper {
@@ -91,10 +90,18 @@ header {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  -webkit-app-region: drag;
+  align-items: center;
+  justify-content: center;
+  &.darken {
+    filter: brightness(0);
+  }
 }
 
 .suggestion-text {
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  flex-wrap: wrap;
   font-family: ProximaNova;
   font-weight: 600;
   color: var(--text);
@@ -110,22 +117,26 @@ header {
   height: 100%;
   align-items: center;
   display: flex;
+  justify-content: center;
 }
 
 .emoji-wrapper {
   display: flex;
+  flex-wrap: wrap;
 }
 
 .emoji {
+  text-align: center;
   font-size: 40px;
   animation-duration: 0.5s;
-  display: flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
   min-width: 55px;
   line-height: 53px;
+  width: 20%;
   font-family: emoji;
+  cursor: pointer;
+  &:hover {
+    background: var(--fg);
+  }
 }
 
 .selected {
@@ -138,8 +149,8 @@ header {
 .word.selected:before {
   content: "Selected";
   position: absolute;
-  top: -8px;
-  left: -1px;
+  top: -15px;
+  left: 0;
   z-index: 33;
   font-size: 11px;
   background: var(--primary);
@@ -148,19 +159,22 @@ header {
   transition: all 0.3s ease;
 }
 
+.input-wrapper {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
 .main-input {
-  background: var(--bg);
+  height: 100%;
   color: var(--text);
+  background: var(--fg);
   z-index: 7;
-  box-shadow: inset 0px 1px 8px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.2);
   width: 100%;
   font-size: 16px;
-  padding: 0;
-  margin: 0;
-  padding-right: 8px;
-  padding-left: 12px;
+  padding: 2px 8px;
   outline: none;
-  border: none;
   font-family: ProximaNova;
 }
 
@@ -185,14 +199,63 @@ header {
 .logo-wrapper {
   height: 100%;
   flex-direction: column;
-  align-items: center;
   display: flex;
   justify-content: center;
   img {
-    width: 130px;
+    width: 90px;
     margin-bottom: 8px;
   }
   small {
+    font-size: 16px;
     color: var(--primary);
+  }
+}
+
+.alt-options {
+  background: var(--context-menu);
+  box-shadow: 0 15px 23px 13px rgba(0, 0, 0, 0.13);
+  width: 100vw;
+  position: absolute;
+  top: 100%;
+  transition: all 0.3s ease;
+  transform: translateY(0);
+  &.active {
+    transform: translateY(-100%);
+  }
+  .alt-option {
+    font-size: 16px;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.13);
+    padding: 4px;
+    &:hover,
+    &.active {
+      background: #c9ebff;
+    }
+    cursor: pointer;
+  }
+  .alt-option-key {
+    text-decoration: underline;
+    font-weight: 600;
+    display: inline-block;
+    margin-right: 2px;
+  }
+  .option-icon {
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    img {
+      width: auto;
+      height: 25px;
+    }
+  }
+  .open-in-new {
+    color: #b3b3b3;
+    font-size: 14px;
+    flex: 1;
+    text-align: right;
+    padding-right: 20px;
   }
 }
