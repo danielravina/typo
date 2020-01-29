@@ -7,7 +7,7 @@ import React, {
   useCallback,
   useEffect
 } from "react";
-import emoji from "node-emoji";
+import "emoji-mart/css/emoji-mart.css";
 import classnames from "classnames";
 import fetchJsonp from "fetch-jsonp";
 import titleCase from "ap-style-title-case";
@@ -16,27 +16,9 @@ import Highlighter from "react-highlight-words";
 import fuzzy from "fuzzy";
 import logo from "./images/logo.svg";
 import logoBright from "./images/logo-bright.svg";
-
+import EmojiPicker from "./EmojiPicker";
 const SUGGESTIONS_URL =
   "https://suggestqueries.google.com/complete/search?client=firefox&q=";
-
-const defaultEmojis = [
-  "👍",
-  "😂",
-  "🔥",
-  "😊",
-  "🎉",
-  "😭",
-  "😍",
-  "💥",
-  "🤔",
-  "💕",
-  "🙏",
-  "🤣",
-  "❤️",
-  "👎",
-  "👌"
-];
 
 const altOptions = {
   google: {
@@ -70,46 +52,25 @@ export default function() {
   const [suggestion, setSuggestion] = useState("");
   const [altPressed, setAltPressed] = useState(false);
   const [shiftPressed, setShiftPressed] = useState(false);
-  const [emojiMode, setEmojiMode] = useState(false);
-  const [emojis, setEmojis] = useState(defaultEmojis);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [wordSelectionMode, setWordSelectionMode] = useState(false);
-  const [selectionCount, setSelectionCount] = useState(defaultEmojis.length);
   const [colorTheme, setColorTheme] = useState(null);
   const [suggestionHistory, setSuggestionHistory] = useState([]);
-
+  const [chosenEmoji, setChosenEmoji] = useState(null);
+  const [selectionCount, setSelectionCount] = useState(0);
+  const [emojiMode, setEmojiMode] = useState(0);
   const resetState = useCallback(() => {
     setWord("");
+    setEmojiMode(false);
     setSuggestion("");
     setAltPressed(false);
     setShiftPressed(false);
-    setEmojiMode(false);
-    setEmojis(defaultEmojis);
     setSelectedIndex(0);
     setWordSelectionMode(false);
-    setSelectionCount(defaultEmojis.length);
+    setSelectionCount(0);
   }, []);
 
   const input = useRef(null);
-
-  const fetchEmojis = useCallback(value => {
-    if (value.length < 2) {
-      // include the ':' which is stripped by node-emoji
-      setSelectedIndex(0);
-      setSelectionCount(defaultEmojis.length);
-
-      return;
-    }
-
-    const results = emoji
-      .search(value)
-      .map(e => e.emoji)
-      .slice(0, 15);
-
-    setEmojis(results);
-    setSelectedIndex(0);
-    setSelectionCount(results.length);
-  }, []);
 
   const fetchSuggestions = useCallback(
     async value => {
@@ -148,20 +109,12 @@ export default function() {
   }, [suggestion, shiftPressed]);
 
   const selectedWord = useMemo(() => {
-    if (emojiMode) {
-      return emojis[selectedIndex];
-    } else if (wordSelectionMode === true) {
+    if (wordSelectionMode === true) {
       return formattedSuggestion.split(" ")[selectedIndex];
     } else {
       return formattedSuggestion;
     }
-  }, [
-    emojiMode,
-    emojis,
-    formattedSuggestion,
-    selectedIndex,
-    wordSelectionMode
-  ]);
+  }, [formattedSuggestion, selectedIndex, wordSelectionMode]);
 
   useEffect(() => {
     window.ipcRenderer.on("window-shown", () => {
@@ -169,6 +122,11 @@ export default function() {
     });
     window.ipcRenderer.on("window-hidden", () => {
       resetState();
+    });
+
+    window.ipcRenderer.on("set-emoji-mode", () => {
+      setWord(":");
+      setEmojiMode(true);
     });
   }, [resetState]);
 
@@ -204,21 +162,16 @@ export default function() {
       setWord(value);
 
       if (value.charAt(0) === ":") {
-        setEmojiMode(true);
-        setEmojis(defaultEmojis);
         setSelectedIndex(0);
-
-        fetchEmojis(value);
+        setEmojiMode(true);
       } else {
         setEmojiMode(false);
-        setEmojis(defaultEmojis);
         setSelectedIndex(0);
-        setSelectionCount(defaultEmojis.length);
-
+        setSelectionCount(0);
         fetchSuggestions(value);
       }
     },
-    [fetchEmojis, fetchSuggestions]
+    [fetchSuggestions]
   );
 
   const onKeyUp = useCallback(e => {
@@ -270,6 +223,12 @@ export default function() {
     setSuggestionHistory(newHistory);
   }, [selectedWord, suggestionHistory]);
 
+  const onEmojiSelect = useCallback(emoji => {
+    console.log(emoji);
+    window.ipcRenderer.send("copyClipBoard", emoji);
+    window.ipcRenderer.send("hide");
+  }, []);
+
   const onArrowUp = useCallback(() => {
     setWordSelectionMode(false);
     setSelectedIndex(0);
@@ -301,6 +260,7 @@ export default function() {
 
   const onKeyDown = useCallback(
     e => {
+      if (emojiMode) return;
       switch (e.key) {
         case "Shift":
           setShiftPressed(true);
@@ -339,6 +299,7 @@ export default function() {
       }
     },
     [
+      emojiMode,
       onArrowDown,
       onArrowLeft,
       onArrowRight,
@@ -349,24 +310,6 @@ export default function() {
     ]
   );
 
-  // renderEmojis() {
-  //   if (!emojiMode) return null;
-
-  //   return (
-  //     <div className="emoji-wrapper">
-  //       {emojis.map((e, i) => (
-  //         <span
-  //           key={i}
-  //           className={classnames("animated", "bounceIn", "emoji", {
-  //             selected: i === selectedIndex
-  //           })}
-  //           dangerouslySetInnerHTML={{ __html: e }}
-  //         />
-  //       ))}
-  //     </div>
-  //   );
-  // }
-
   const twoLines = useMemo(() => suggestion.length > 30, [suggestion]);
 
   const isWordMatchSuggestion = useMemo(
@@ -376,29 +319,6 @@ export default function() {
       suggestion.trim().toLowerCase() === word.trim().toLowerCase(),
 
     [suggestion, word]
-  );
-
-  const suggestionParts = useMemo(
-    () =>
-      formattedSuggestion.split(" ").map((w, i) => (
-        <>
-          <span
-            className={classnames("word", {
-              selected: word.length && wordSelectionMode && i === selectedIndex
-            })}
-          >
-            <Highlighter
-              highlightClassName={"selected"}
-              searchWords={
-                wordSelectionMode ? [] : word.split("").map(RegexEscape)
-              }
-              textToHighlight={w}
-            />
-          </span>
-          <span className="spacer" />
-        </>
-      )),
-    [formattedSuggestion, selectedIndex, word, wordSelectionMode]
   );
 
   return (
@@ -423,7 +343,25 @@ export default function() {
               selected: !wordSelectionMode && isWordMatchSuggestion
             })}
           >
-            {suggestionParts}
+            {formattedSuggestion.split(" ").map((w, i) => (
+              <>
+                <span
+                  className={classnames("word", {
+                    selected:
+                      word.length && wordSelectionMode && i === selectedIndex
+                  })}
+                >
+                  <Highlighter
+                    highlightClassName={"selected"}
+                    searchWords={
+                      wordSelectionMode ? [] : word.split("").map(RegexEscape)
+                    }
+                    textToHighlight={w}
+                  />
+                </span>
+                <span className="spacer" />
+              </>
+            ))}
           </span>
         </div>
       </div>
@@ -446,6 +384,7 @@ export default function() {
           );
         })}
       </div>
+      <EmojiPicker search={word} onSelect={onEmojiSelect} visible={emojiMode} />
     </div>
   );
 }

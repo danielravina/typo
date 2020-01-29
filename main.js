@@ -10,12 +10,14 @@ const axios = require("axios");
 const mb = menubar({
   preloadWindow: true,
   browserWindow: {
-    width: 321,
-    height: 235,
+    resizable: true,
+    width: 353,
+    height: 222,
     webPreferences: {
       preload: path.join(__dirname, "preload.js")
     },
-    alwaysOnTop: true
+    alwaysOnTop: true,
+    show: true
   },
   index: "http://127.0.0.1:9000"
 });
@@ -39,8 +41,14 @@ function toggleWindow() {
   }
 }
 
+function startOnEmoji() {
+  showWindow();
+  mb.window.webContents.send("set-emoji-mode");
+}
+
 mb.on("ready", () => {
   globalShortcut.register("Control+Space", toggleWindow);
+  globalShortcut.register("Command+Shift+;", startOnEmoji);
 
   ipcMain.on("copyClipBoard", (_, value) => {
     clipboard.writeText(value);
