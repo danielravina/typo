@@ -17,7 +17,21 @@ export default function({ search = "", visible, onSelect }) {
     e => {
       if (!visible) return;
       switch (e.key) {
-        case "ArrowRight":
+        case "ArrowDown": {
+          e.preventDefault();
+          if (selectedIndex + 9 < filtered.length - 1) {
+            setSelectedIndex(selectedIndex + 9);
+          }
+          break;
+        }
+        case "ArrowUp": {
+          e.preventDefault();
+          if (selectedIndex - 9 > 0) {
+            setSelectedIndex(selectedIndex - 9);
+          }
+          break;
+        }
+        case "ArrowRight": {
           e.preventDefault();
           if (selectedIndex === filtered.length - 1) {
             setSelectedIndex(0);
@@ -25,7 +39,8 @@ export default function({ search = "", visible, onSelect }) {
             setSelectedIndex(selectedIndex + 1);
           }
           break;
-        case "ArrowLeft":
+        }
+        case "ArrowLeft": {
           e.preventDefault();
           if (selectedIndex <= 0) {
             setSelectedIndex(filtered.length - 1);
@@ -33,9 +48,11 @@ export default function({ search = "", visible, onSelect }) {
             setSelectedIndex(selectedIndex - 1);
           }
           break;
-        case "Enter":
+        }
+        case "Enter": {
           const selected = emojiIndex.emojis[filtered[selectedIndex]];
           onSelect(selected.native);
+        }
         default:
           break;
       }

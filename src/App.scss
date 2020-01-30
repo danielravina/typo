@@ -86,11 +86,11 @@ body {
 
 .emoji-mart-scroll,
 .suggestion-wrapper {
-  height: 87vh !important;
+  height: 85vh !important;
 }
 
 .input-wrapper {
-  height: 13vh;
+  height: 15vh;
 }
 
 .suggestion-wrapper {
@@ -156,7 +156,6 @@ body {
 .main-input {
   height: 100%;
   color: var(--text);
-  background: var(--fg);
   z-index: 7;
   border: 1px solid rgba(0, 0, 0, 0.2);
   width: 100%;
