@@ -84,16 +84,12 @@ body {
   background: var(--bg);
 }
 
-.emoji-mart-scroll,
-.suggestion-wrapper {
+.emoji-mart-scroll {
   height: 85vh !important;
 }
 
-.input-wrapper {
-  height: 15vh;
-}
-
 .suggestion-wrapper {
+  background: pink;
   margin: 0;
   display: flex;
   flex-direction: column;
@@ -135,12 +131,13 @@ body {
 
 .suggestion-text.selected:before,
 .word.selected:before {
-  content: "Selected";
+  content: "Type";
   position: absolute;
   top: -15px;
   left: 0;
   z-index: 33;
   font-size: 11px;
+  font-weight: 100;
   background: var(--primary);
   color: var(--bg);
   padding: 1px 8px 1px 4px;
@@ -148,6 +145,7 @@ body {
 }
 
 .input-wrapper {
+  height: 46px;
   display: flex;
   align-items: stretch;
   justify-content: center;
@@ -159,10 +157,11 @@ body {
   z-index: 7;
   border: 1px solid rgba(0, 0, 0, 0.2);
   width: 100%;
-  font-size: 16px;
+  font-size: 21px;
   padding: 2px 8px;
   outline: none;
   font-family: ProximaNova;
+  background: var(--search);
 }
 
 .locked-char {

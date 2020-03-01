@@ -48,29 +48,36 @@ const altOptions = {
 };
 
 export default function() {
-  const [word, setWord] = useState("");
+  const [query, setQuery] = useState("");
   const [suggestion, setSuggestion] = useState("");
   const [altPressed, setAltPressed] = useState(false);
   const [shiftPressed, setShiftPressed] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [wordSelectionMode, setWordSelectionMode] = useState(false);
   const [colorTheme, setColorTheme] = useState(null);
   const [suggestionHistory, setSuggestionHistory] = useState([]);
   const [chosenEmoji, setChosenEmoji] = useState(null);
   const [selectionCount, setSelectionCount] = useState(0);
   const [emojiMode, setEmojiMode] = useState(0);
   const resetState = useCallback(() => {
-    setWord("");
+    setQuery("");
     setEmojiMode(false);
     setSuggestion("");
     setAltPressed(false);
     setShiftPressed(false);
     setSelectedIndex(0);
-    setWordSelectionMode(false);
     setSelectionCount(0);
   }, []);
 
   const input = useRef(null);
+
+  const isWordMatchSuggestion = useMemo(
+    () =>
+      query.length &&
+      suggestion.length &&
+      suggestion.trim().toLowerCase() === query.trim().toLowerCase(),
+
+    [query, suggestion]
+  );
 
   const fetchSuggestions = useCallback(
     async value => {
@@ -108,13 +115,12 @@ export default function() {
     }
   }, [suggestion, shiftPressed]);
 
-  const selectedWord = useMemo(() => {
-    if (wordSelectionMode === true) {
-      return formattedSuggestion.split(" ")[selectedIndex];
-    } else {
+  const finalResult = useMemo(() => {
+    if (isWordMatchSuggestion && selectedIndex === null) {
       return formattedSuggestion;
     }
-  }, [formattedSuggestion, selectedIndex, wordSelectionMode]);
+    return formattedSuggestion.split(" ")[selectedIndex];
+  }, [formattedSuggestion, isWordMatchSuggestion, selectedIndex]);
 
   useEffect(() => {
     window.ipcRenderer.on("window-shown", () => {
@@ -125,7 +131,7 @@ export default function() {
     });
 
     window.ipcRenderer.on("set-emoji-mode", () => {
-      setWord(":");
+      setQuery(":");
       setEmojiMode(true);
     });
   }, [resetState]);
@@ -134,32 +140,32 @@ export default function() {
     source => {
       window.ipcRenderer.send("hide");
       window.ipcRenderer.send("openExternal", {
-        value: selectedWord,
+        value: finalResult,
         source
       });
 
       const newHistory = Array.from(
-        new Set([...suggestionHistory, selectedWord.toLowerCase()])
+        new Set([...suggestionHistory, finalResult.toLowerCase()])
       );
 
       setSuggestionHistory(newHistory);
     },
-    [selectedWord, suggestionHistory]
+    [finalResult, suggestionHistory]
   );
 
   const onTabPress = useCallback(() => {
     input.current.focus();
-    const val = suggestion + " ";
+    const val = suggestion;
     input.current.value = "";
     input.current.value = val;
-    setWord(val);
-    setWordSelectionMode(false);
+    setQuery(val);
+    setSelectedIndex(null);
   }, [suggestion]);
 
   const onInputChange = useCallback(
     e => {
       const { value } = e.target;
-      setWord(value);
+      setQuery(value);
 
       if (value.charAt(0) === ":") {
         setSelectedIndex(0);
@@ -213,29 +219,19 @@ export default function() {
   );
 
   const onEnterPress = useCallback(() => {
-    window.ipcRenderer.send("copyClipBoard", selectedWord);
+    window.ipcRenderer.send("type", finalResult);
     window.ipcRenderer.send("hide");
 
     const newHistory = Array.from(
-      new Set([...suggestionHistory, selectedWord.toLowerCase()])
+      new Set([...suggestionHistory, finalResult.toLowerCase()])
     );
 
     setSuggestionHistory(newHistory);
-  }, [selectedWord, suggestionHistory]);
+  }, [finalResult, suggestionHistory]);
 
   const onEmojiSelect = useCallback(emoji => {
-    console.log(emoji);
-    window.ipcRenderer.send("copyClipBoard", emoji);
+    window.ipcRenderer.send("type", emoji);
     window.ipcRenderer.send("hide");
-  }, []);
-
-  const onArrowUp = useCallback(() => {
-    setWordSelectionMode(false);
-    setSelectedIndex(0);
-  }, []);
-
-  const onArrowDown = useCallback(() => {
-    setWordSelectionMode(true);
   }, []);
 
   const onArrowLeft = useCallback(() => {
@@ -247,16 +243,12 @@ export default function() {
   }, [selectedIndex, selectionCount]);
 
   const onArrowRight = useCallback(() => {
-    if (!wordSelectionMode) {
-      setWordSelectionMode(true);
-    }
-
     if (selectedIndex < selectionCount - 1) {
       setSelectedIndex(selectedIndex + 1);
     } else {
       setSelectedIndex(0);
     }
-  }, [selectedIndex, selectionCount, wordSelectionMode]);
+  }, [selectedIndex, selectionCount]);
 
   const onKeyDown = useCallback(
     e => {
@@ -279,47 +271,21 @@ export default function() {
           onEnterPress();
           break;
         case "ArrowRight":
-          if (wordSelectionMode) e.preventDefault();
+          e.preventDefault();
           onArrowRight();
           break;
         case "ArrowLeft":
-          if (wordSelectionMode) e.preventDefault();
+          e.preventDefault();
           onArrowLeft();
-          break;
-        case "ArrowUp":
-          e.preventDefault();
-          onArrowUp();
-          break;
-        case "ArrowDown":
-          e.preventDefault();
-          onArrowDown();
           break;
         default:
           break;
       }
     },
-    [
-      emojiMode,
-      onArrowDown,
-      onArrowLeft,
-      onArrowRight,
-      onArrowUp,
-      onEnterPress,
-      onTabPress,
-      wordSelectionMode
-    ]
+    [emojiMode, onArrowLeft, onArrowRight, onEnterPress, onTabPress]
   );
 
   const twoLines = useMemo(() => suggestion.length > 30, [suggestion]);
-
-  const isWordMatchSuggestion = useMemo(
-    () =>
-      word.length &&
-      suggestion.length &&
-      suggestion.trim().toLowerCase() === word.trim().toLowerCase(),
-
-    [suggestion, word]
-  );
 
   return (
     <div className={`app ${colorTheme}`}>
@@ -328,7 +294,7 @@ export default function() {
           autoFocus
           ref={input}
           className="main-input"
-          value={word}
+          value={query}
           onChange={onInputChange}
           onKeyDown={onKeyDown}
           onKeyUp={onKeyUp}
@@ -340,24 +306,17 @@ export default function() {
           <span
             className={classnames("suggestion-text animated fadeIn", {
               reduced: twoLines,
-              selected: !wordSelectionMode && isWordMatchSuggestion
+              selected: isWordMatchSuggestion && selectedIndex === null
             })}
           >
             {formattedSuggestion.split(" ").map((w, i) => (
               <>
                 <span
                   className={classnames("word", {
-                    selected:
-                      word.length && wordSelectionMode && i === selectedIndex
+                    selected: query.length && i === selectedIndex
                   })}
                 >
-                  <Highlighter
-                    highlightClassName={"selected"}
-                    searchWords={
-                      wordSelectionMode ? [] : word.split("").map(RegexEscape)
-                    }
-                    textToHighlight={w}
-                  />
+                  {w}
                 </span>
                 <span className="spacer" />
               </>
@@ -367,7 +326,7 @@ export default function() {
       </div>
       <div
         className={classnames("alt-options", {
-          active: altPressed && word.length
+          active: altPressed && query.length
         })}
       >
         {Object.keys(altOptions).map(alt => {
@@ -384,7 +343,11 @@ export default function() {
           );
         })}
       </div>
-      <EmojiPicker search={word} onSelect={onEmojiSelect} visible={emojiMode} />
+      <EmojiPicker
+        search={query}
+        onSelect={onEmojiSelect}
+        visible={emojiMode}
+      />
     </div>
   );
 }

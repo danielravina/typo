@@ -11,7 +11,7 @@ const mb = menubar({
   preloadWindow: true,
   browserWindow: {
     resizable: true,
-    width: 353,
+    width: 338,
     height: 222,
     webPreferences: {
       preload: path.join(__dirname, "preload.js")
@@ -50,8 +50,7 @@ mb.on("ready", () => {
   globalShortcut.register("Control+Space", toggleWindow);
   globalShortcut.register("Command+Shift+;", startOnEmoji);
 
-  ipcMain.on("copyClipBoard", (_, value) => {
-    clipboard.writeText(value);
+  ipcMain.on("type", (_, value) => {
     setTimeout(() => {
       robot.typeString(value);
     }, 50);
