@@ -21,7 +21,8 @@
     "react-highlight-words": "^0.16.0",
     "react-scripts": "3.2.0",
     "regex-escape": "^3.4.9",
-    "robotjs": "^0.5.1"
+    "robotjs": "^0.5.1",
+    "text-ellipsis": "^1.0.3"
   },
   "scripts": {
     "start": "PORT=9000 react-scripts start",

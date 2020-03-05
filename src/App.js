@@ -11,12 +11,10 @@ import "emoji-mart/css/emoji-mart.css";
 import classnames from "classnames";
 import fetchJsonp from "fetch-jsonp";
 import titleCase from "ap-style-title-case";
-import RegexEscape from "regex-escape";
-import Highlighter from "react-highlight-words";
 import fuzzy from "fuzzy";
-import logo from "./images/logo.svg";
-import logoBright from "./images/logo-bright.svg";
 import EmojiPicker from "./EmojiPicker";
+import ellipsis from "text-ellipsis";
+
 const SUGGESTIONS_URL =
   "https://suggestqueries.google.com/complete/search?client=firefox&q=";
 
@@ -58,6 +56,8 @@ export default function() {
   const [chosenEmoji, setChosenEmoji] = useState(null);
   const [selectionCount, setSelectionCount] = useState(0);
   const [emojiMode, setEmojiMode] = useState(0);
+  const [clipboardText, setClipboardText] = useState(null);
+  const [bulkCorrections, setBulkCorrections] = useState(new Set());
   const resetState = useCallback(() => {
     setQuery("");
     setEmojiMode(false);
@@ -69,6 +69,11 @@ export default function() {
   }, []);
 
   const input = useRef(null);
+  const appRef = useRef(null);
+
+  const changeHeight = useCallback(height => {
+    window.ipcRenderer.send("changeHeight", height);
+  }, []);
 
   const isWordMatchSuggestion = useMemo(
     () =>
@@ -79,30 +84,36 @@ export default function() {
     [query, suggestion]
   );
 
-  const fetchSuggestions = useCallback(
-    async value => {
-      if (!value.length) {
-        setSuggestion("");
-        return;
+  const isCapitalized = useCallback(word => {
+    if (!word) return null;
+    if (/^\d+$/.test(word)) return false; // number
+    return word[0].toUpperCase() === word[0];
+  }, []);
+
+  const onTabPress = useCallback(() => {
+    input.current.focus();
+    const val = suggestion;
+    input.current.value = "";
+    input.current.value = val;
+    setQuery(val);
+    setSelectedIndex(null);
+  }, [suggestion]);
+
+  const fetchAutocomplete = useCallback(
+    async (value, checkHistory = false) => {
+      if (checkHistory) {
+        const history = fuzzy
+          .filter(value, suggestionHistory)
+          .map(s => s.original);
+
+        if (history.length) {
+          return history[0];
+        }
       }
 
-      let newSuggestion;
-
-      const history = fuzzy
-        .filter(value, suggestionHistory)
-        .map(s => s.original);
-
-      if (history.length) {
-        newSuggestion = history[0];
-      } else {
-        const response = await fetchJsonp(SUGGESTIONS_URL + value);
-        const results = await response.json();
-
-        newSuggestion = results[1][0] || "";
-      }
-
-      setSuggestion(newSuggestion);
-      setSelectionCount(newSuggestion.split(" ").length);
+      const response = await fetchJsonp(SUGGESTIONS_URL + value);
+      const results = await response.json();
+      return results[1][0] || "";
     },
     [suggestionHistory]
   );
@@ -116,13 +127,18 @@ export default function() {
   }, [suggestion, shiftPressed]);
 
   const finalResult = useMemo(() => {
-    if (isWordMatchSuggestion && selectedIndex === null) {
+    if (selectedIndex === null) {
       return formattedSuggestion;
     }
     return formattedSuggestion.split(" ")[selectedIndex];
-  }, [formattedSuggestion, isWordMatchSuggestion, selectedIndex]);
+  }, [formattedSuggestion, selectedIndex]);
 
   useEffect(() => {
+    window.ipcRenderer.on("clipboard-text", (e, text) => {
+      if (!text.length) return;
+      setClipboardText(text);
+    });
+
     window.ipcRenderer.on("window-shown", () => {
       input.current.focus();
     });
@@ -135,6 +151,77 @@ export default function() {
       setEmojiMode(true);
     });
   }, [resetState]);
+
+  const processClipboardText = useCallback(async () => {
+    const chunks = [];
+    const words = clipboardText.replace(/\u21b5|\n/g, "").split(" ");
+    setQuery(clipboardText);
+
+    words.forEach((word, i) => {
+      const lastWord = words[i - 1];
+      if (isCapitalized(word) && isCapitalized(lastWord)) {
+        chunks[chunks.length - 1] = `${lastWord} ${word}`;
+      } else {
+        chunks.push(word);
+      }
+    });
+
+    for (let i = 0; i < chunks.length; ++i) {
+      const toFetch = chunks[i];
+      let fetchedChunk = "";
+
+      if (toFetch.length === 1) {
+        fetchedChunk = toFetch;
+      } else {
+        for (let j = 2; j <= toFetch.length; ++j) {
+          const warmup = toFetch
+            .split("")
+            .slice(0, j)
+            .join("");
+
+          if (warmup.length) {
+            const result = await fetchAutocomplete(warmup + " ");
+            if (!result.length) continue;
+            fetchedChunk = result;
+          }
+        }
+      }
+      console.log({ toFetch, fetchedChunk });
+
+      let selectedPortion = fetchedChunk
+        .split(" ")
+        .slice(0, toFetch.split(" ").length)
+        .join(" ");
+
+      const punctMatch = toFetch.match(/[,;:]+$/);
+      if (punctMatch !== null) {
+        selectedPortion = selectedPortion.concat(punctMatch[0]);
+      }
+
+      if (isCapitalized(toFetch)) {
+        selectedPortion = titleCase(selectedPortion);
+      }
+
+      if (
+        selectedPortion.trim().toLowerCase() !== toFetch.trim().toLowerCase()
+      ) {
+        setBulkCorrections(bulkSet => {
+          selectedPortion.split(" ").forEach(w => {
+            bulkSet.add(w);
+          });
+
+          return bulkSet;
+        });
+      }
+
+      setSuggestion(sugg => (sugg + " " + selectedPortion).trim());
+      setClipboardText(null);
+      setBulkCorrections(new Set());
+      setSelectedIndex(null);
+      changeHeight(appRef.current.offsetHeight);
+    }
+    window.ipcRenderer.send("iNeedFocus");
+  }, [changeHeight, clipboardText, fetchAutocomplete, isCapitalized]);
 
   const onExternalSelect = useCallback(
     source => {
@@ -153,31 +240,33 @@ export default function() {
     [finalResult, suggestionHistory]
   );
 
-  const onTabPress = useCallback(() => {
-    input.current.focus();
-    const val = suggestion;
-    input.current.value = "";
-    input.current.value = val;
-    setQuery(val);
-    setSelectedIndex(null);
-  }, [suggestion]);
-
   const onInputChange = useCallback(
-    e => {
+    async e => {
       const { value } = e.target;
+      setClipboardText(null);
+      setBulkCorrections(new Set());
       setQuery(value);
-
       if (value.charAt(0) === ":") {
         setSelectedIndex(0);
         setEmojiMode(true);
+        changeHeight(368);
       } else {
         setEmojiMode(false);
         setSelectedIndex(0);
         setSelectionCount(0);
-        fetchSuggestions(value);
+
+        if (value.length === 0) {
+          changeHeight(46);
+          setSuggestion("");
+        } else {
+          const result = await fetchAutocomplete(value, true);
+          setSuggestion(result);
+          setSelectionCount(result.split(" ").length);
+          changeHeight(appRef.current.offsetHeight);
+        }
       }
     },
-    [fetchSuggestions]
+    [changeHeight, fetchAutocomplete]
   );
 
   const onKeyUp = useCallback(e => {
@@ -219,6 +308,11 @@ export default function() {
   );
 
   const onEnterPress = useCallback(() => {
+    if (clipboardText) {
+      processClipboardText();
+      return;
+    }
+
     window.ipcRenderer.send("type", finalResult);
     window.ipcRenderer.send("hide");
 
@@ -227,7 +321,7 @@ export default function() {
     );
 
     setSuggestionHistory(newHistory);
-  }, [finalResult, suggestionHistory]);
+  }, [clipboardText, finalResult, processClipboardText, suggestionHistory]);
 
   const onEmojiSelect = useCallback(emoji => {
     window.ipcRenderer.send("type", emoji);
@@ -285,12 +379,18 @@ export default function() {
     [emojiMode, onArrowLeft, onArrowRight, onEnterPress, onTabPress]
   );
 
-  const twoLines = useMemo(() => suggestion.length > 30, [suggestion]);
+  const isTwoLines = useMemo(() => suggestion.length > 17, [suggestion]);
 
   return (
-    <div className={`app ${colorTheme}`}>
+    <div className={`app ${colorTheme}`} ref={appRef}>
+      <EmojiPicker
+        search={query}
+        onSelect={onEmojiSelect}
+        visible={emojiMode}
+      />
       <div className="input-wrapper">
         <input
+          placeholder={clipboardText ? clipboardText : null}
           autoFocus
           ref={input}
           className="main-input"
@@ -305,15 +405,16 @@ export default function() {
         <div className="suggestion-body">
           <span
             className={classnames("suggestion-text animated fadeIn", {
-              reduced: twoLines,
-              selected: isWordMatchSuggestion && selectedIndex === null
+              reduced: isTwoLines,
+              selected: selectedIndex === null
             })}
           >
             {formattedSuggestion.split(" ").map((w, i) => (
               <>
                 <span
                   className={classnames("word", {
-                    selected: query.length && i === selectedIndex
+                    selected: query.length && i === selectedIndex,
+                    corrected: bulkCorrections.has(w)
                   })}
                 >
                   {w}
@@ -343,11 +444,6 @@ export default function() {
           );
         })}
       </div>
-      <EmojiPicker
-        search={query}
-        onSelect={onEmojiSelect}
-        visible={emojiMode}
-      />
     </div>
   );
 }

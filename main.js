@@ -6,13 +6,15 @@ const isDev = process.env.NODE_ENV === "development";
 const path = require("path");
 const robot = require("robotjs");
 const axios = require("axios");
+const DEFAULT_WIDTH = 400;
+const DEFAULT_HEIGHT = 46;
 
 const mb = menubar({
   preloadWindow: true,
   browserWindow: {
     resizable: true,
-    width: 338,
-    height: 222,
+    width: DEFAULT_WIDTH,
+    height: DEFAULT_HEIGHT,
     webPreferences: {
       preload: path.join(__dirname, "preload.js")
     },
@@ -23,12 +25,21 @@ const mb = menubar({
 });
 
 function hideWindow() {
+  clipboard.clear();
   mb.window.hide();
   mb.app.hide();
   mb.window.webContents.send("window-hidden");
 }
 
+function changeHeight(height) {
+  mb.window.setSize(DEFAULT_WIDTH, height);
+}
+
 function showWindow() {
+  const text = clipboard.readText();
+  if (text.length) {
+    mb.window.webContents.send("clipboard-text", text);
+  }
   mb.showWindow();
   mb.window.webContents.send("window-shown");
 }
@@ -50,13 +61,14 @@ mb.on("ready", () => {
   globalShortcut.register("Control+Space", toggleWindow);
   globalShortcut.register("Command+Shift+;", startOnEmoji);
 
-  ipcMain.on("type", (_, value) => {
+  ipcMain.on("type", (e, value) => {
+    clipboard.clear();
     setTimeout(() => {
       robot.typeString(value);
-    }, 50);
+    }, 5);
   });
 
-  ipcMain.on("openExternal", async (_, { value, source }) => {
+  ipcMain.on("openExternal", async (e, { value, source }) => {
     if (source === "google.com") {
       shell.openExternal(
         `https://www.google.com/search?q=${value}&sourceid=chrome&ie=UTF-8`
@@ -76,5 +88,15 @@ mb.on("ready", () => {
 
   ipcMain.on("hide", () => {
     hideWindow();
+  });
+
+  ipcMain.on("changeHeight", (e, height) => {
+    changeHeight(height);
+  });
+
+  ipcMain.on("iNeedFocus", () => {
+    mb.window.hide();
+    mb.app.hide();
+    mb.showWindow();
   });
 });
