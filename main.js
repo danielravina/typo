@@ -1,6 +1,6 @@
 const electron = require("electron");
-const { clipboard, ipcMain, globalShortcut, shell } = electron;
-const { menubar } = require("menubar");
+const { ipcMain, globalShortcut, shell, app, BrowserWindow, Tray } = electron;
+const clipboard = require("electron-clipboard-extended");
 const { version } = require("./package.json");
 const isDev = process.env.NODE_ENV === "development";
 const path = require("path");
@@ -9,63 +9,81 @@ const axios = require("axios");
 const DEFAULT_WIDTH = 400;
 const DEFAULT_HEIGHT = 46;
 
-const mb = menubar({
-  preloadWindow: true,
-  browserWindow: {
-    resizable: true,
-    width: DEFAULT_WIDTH,
-    height: DEFAULT_HEIGHT,
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js")
-    },
-    alwaysOnTop: true,
-    show: true
-  },
-  index: "http://127.0.0.1:9000"
-});
+let win;
+let tray;
+
+// const mb = menubar({
+//   preloadWindow: true,
+//   browserWindow: {
+//     resizable: true,
+//     width: DEFAULT_WIDTH,
+//     height: DEFAULT_HEIGHT,
+//     webPreferences: {
+//       preload: path.join(__dirname, "preload.js")
+//     },
+//     alwaysOnTop: true,
+//     show: true,
+//     center: true
+//   }
+// });
+
+app.dock.hide();
 
 function hideWindow() {
   clipboard.clear();
-  mb.window.hide();
-  mb.app.hide();
-  mb.window.webContents.send("window-hidden");
+  win.hide();
+  app.hide();
+  changeHeight(DEFAULT_HEIGHT);
+  win.webContents.send("window-hidden");
 }
 
 function changeHeight(height) {
-  mb.window.setSize(DEFAULT_WIDTH, height);
+  win.setSize(DEFAULT_WIDTH, height, true);
 }
 
 function showWindow() {
-  const text = clipboard.readText();
-  if (text.length) {
-    mb.window.webContents.send("clipboard-text", text);
-  }
-  mb.showWindow();
-  mb.window.webContents.send("window-shown");
+  win.show();
+  win.webContents.send("window-shown");
 }
 
 function toggleWindow() {
-  if (mb.window.isVisible()) {
+  if (win.isVisible()) {
     hideWindow();
   } else {
     showWindow();
   }
 }
 
-function startOnEmoji() {
-  showWindow();
-  mb.window.webContents.send("set-emoji-mode");
+function initTray() {
+  tray = new Tray(path.join(__dirname, "assets", "IconTemplate.png"));
+  tray.setToolTip("anem");
+  tray.on("click", toggleWindow);
 }
 
-mb.on("ready", () => {
+function createWindow() {
+  win = new BrowserWindow({
+    width: DEFAULT_WIDTH,
+    height: DEFAULT_HEIGHT,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      nodeIntegration: false
+    },
+    resizable: false,
+    maximizable: false,
+    transparent: true,
+    frame: false,
+    show: true,
+    center: true
+  });
+
+  win.loadURL("http://127.0.0.1:9000");
+
   globalShortcut.register("Control+Space", toggleWindow);
-  globalShortcut.register("Command+Shift+;", startOnEmoji);
 
   ipcMain.on("type", (e, value) => {
-    clipboard.clear();
     setTimeout(() => {
       robot.typeString(value);
-    }, 5);
+    }, 50);
   });
 
   ipcMain.on("openExternal", async (e, { value, source }) => {
@@ -95,8 +113,34 @@ mb.on("ready", () => {
   });
 
   ipcMain.on("iNeedFocus", () => {
-    mb.window.hide();
-    mb.app.hide();
-    mb.showWindow();
+    win.hide();
+    app.hide();
+    win.show();
   });
+
+  clipboard
+    .on("text-changed", () => {
+      globalShortcut.register("Command+F", () => {
+        showWindow();
+        const text = clipboard.readText();
+        if (text.length) {
+          win.webContents.send("clipboard-text", text);
+        }
+        globalShortcut.unregister("Command+F");
+      });
+
+      setTimeout(() => {
+        globalShortcut.unregister("Command+F");
+      }, 1000);
+    })
+    .startWatching();
+}
+// my favourite movie is avengers endgame
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") app.quit();
+});
+
+app.on("ready", () => {
+  createWindow();
+  initTray();
 });

@@ -50,21 +50,20 @@ export default function() {
   const [suggestion, setSuggestion] = useState("");
   const [altPressed, setAltPressed] = useState(false);
   const [shiftPressed, setShiftPressed] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(null);
   const [colorTheme, setColorTheme] = useState(null);
-  const [suggestionHistory, setSuggestionHistory] = useState([]);
   const [chosenEmoji, setChosenEmoji] = useState(null);
   const [selectionCount, setSelectionCount] = useState(0);
   const [emojiMode, setEmojiMode] = useState(0);
-  const [clipboardText, setClipboardText] = useState(null);
   const [bulkCorrections, setBulkCorrections] = useState(new Set());
+
   const resetState = useCallback(() => {
     setQuery("");
     setEmojiMode(false);
     setSuggestion("");
     setAltPressed(false);
     setShiftPressed(false);
-    setSelectedIndex(0);
+    setSelectedIndex(null);
     setSelectionCount(0);
   }, []);
 
@@ -74,15 +73,6 @@ export default function() {
   const changeHeight = useCallback(height => {
     window.ipcRenderer.send("changeHeight", height);
   }, []);
-
-  const isWordMatchSuggestion = useMemo(
-    () =>
-      query.length &&
-      suggestion.length &&
-      suggestion.trim().toLowerCase() === query.trim().toLowerCase(),
-
-    [query, suggestion]
-  );
 
   const isCapitalized = useCallback(word => {
     if (!word) return null;
@@ -99,24 +89,11 @@ export default function() {
     setSelectedIndex(null);
   }, [suggestion]);
 
-  const fetchAutocomplete = useCallback(
-    async (value, checkHistory = false) => {
-      if (checkHistory) {
-        const history = fuzzy
-          .filter(value, suggestionHistory)
-          .map(s => s.original);
-
-        if (history.length) {
-          return history[0];
-        }
-      }
-
-      const response = await fetchJsonp(SUGGESTIONS_URL + value);
-      const results = await response.json();
-      return results[1][0] || "";
-    },
-    [suggestionHistory]
-  );
+  const fetchAutocomplete = useCallback(async value => {
+    const response = await fetchJsonp(SUGGESTIONS_URL + value);
+    const results = await response.json();
+    return results[1][0] || "";
+  }, []);
 
   const formattedSuggestion = useMemo(() => {
     if (shiftPressed) {
@@ -133,14 +110,87 @@ export default function() {
     return formattedSuggestion.split(" ")[selectedIndex];
   }, [formattedSuggestion, selectedIndex]);
 
+  const processClipboardText = useCallback(
+    async clipboardText => {
+      resetState();
+      const chunks = [];
+      const words = clipboardText.replace(/\u21b5|\n/g, "").split(" ");
+      setQuery(clipboardText);
+
+      words.forEach((word, i) => {
+        const lastWord = words[i - 1];
+        if (isCapitalized(word) && isCapitalized(lastWord)) {
+          chunks[chunks.length - 1] = `${lastWord} ${word}`;
+        } else {
+          chunks.push(word);
+        }
+      });
+
+      for (let i = 0; i < chunks.length; ++i) {
+        const toFetch = chunks[i];
+        let fetchedChunk = "";
+
+        if (toFetch.length === 1) {
+          fetchedChunk = toFetch;
+        } else {
+          for (let j = 2; j <= toFetch.length; ++j) {
+            const warmup = toFetch
+              .split("")
+              .slice(0, j)
+              .join("");
+
+            if (warmup.length) {
+              const result = await fetchAutocomplete(warmup + " ");
+              if (!result.length) continue;
+              fetchedChunk = result;
+            }
+          }
+        }
+
+        let selectedPortion = fetchedChunk
+          .split(" ")
+          .slice(0, toFetch.split(" ").length)
+          .join(" ");
+
+        const punctMatch = toFetch.match(/[,;:]+$/);
+        if (punctMatch !== null) {
+          selectedPortion = selectedPortion.concat(punctMatch[0]);
+        }
+
+        if (isCapitalized(toFetch)) {
+          selectedPortion = titleCase(selectedPortion);
+        }
+
+        if (
+          selectedPortion.trim().toLowerCase() !== toFetch.trim().toLowerCase()
+        ) {
+          setBulkCorrections(bulkSet => {
+            selectedPortion.split(" ").forEach(w => {
+              bulkSet.add(w);
+            });
+
+            return bulkSet;
+          });
+        }
+
+        setSuggestion(sugg => (sugg + " " + selectedPortion).trim());
+        changeHeight(appRef.current.offsetHeight);
+      }
+      setSelectedIndex(null);
+      window.ipcRenderer.send("iNeedFocus");
+    },
+    [changeHeight, fetchAutocomplete, isCapitalized, resetState]
+  );
+
   useEffect(() => {
     window.ipcRenderer.on("clipboard-text", (e, text) => {
       if (!text.length) return;
-      setClipboardText(text);
+      processClipboardText(text);
     });
 
     window.ipcRenderer.on("window-shown", () => {
       input.current.focus();
+      changeHeight(46);
     });
     window.ipcRenderer.on("window-hidden", () => {
       resetState();
@@ -150,78 +200,7 @@ export default function() {
       setQuery(":");
       setEmojiMode(true);
     });
-  }, [resetState]);
-
-  const processClipboardText = useCallback(async () => {
-    const chunks = [];
-    const words = clipboardText.replace(/\u21b5|\n/g, "").split(" ");
-    setQuery(clipboardText);
-
-    words.forEach((word, i) => {
-      const lastWord = words[i - 1];
-      if (isCapitalized(word) && isCapitalized(lastWord)) {
-        chunks[chunks.length - 1] = `${lastWord} ${word}`;
-      } else {
-        chunks.push(word);
-      }
-    });
-
-    for (let i = 0; i < chunks.length; ++i) {
-      const toFetch = chunks[i];
-      let fetchedChunk = "";
-
-      if (toFetch.length === 1) {
-        fetchedChunk = toFetch;
-      } else {
-        for (let j = 2; j <= toFetch.length; ++j) {
-          const warmup = toFetch
-            .split("")
-            .slice(0, j)
-            .join("");
-
-          if (warmup.length) {
-            const result = await fetchAutocomplete(warmup + " ");
-            if (!result.length) continue;
-            fetchedChunk = result;
-          }
-        }
-      }
-      console.log({ toFetch, fetchedChunk });
-
-      let selectedPortion = fetchedChunk
-        .split(" ")
-        .slice(0, toFetch.split(" ").length)
-        .join(" ");
-
-      const punctMatch = toFetch.match(/[,;:]+$/);
-      if (punctMatch !== null) {
-        selectedPortion = selectedPortion.concat(punctMatch[0]);
-      }
-
-      if (isCapitalized(toFetch)) {
-        selectedPortion = titleCase(selectedPortion);
-      }
-
-      if (
-        selectedPortion.trim().toLowerCase() !== toFetch.trim().toLowerCase()
-      ) {
-        setBulkCorrections(bulkSet => {
-          selectedPortion.split(" ").forEach(w => {
-            bulkSet.add(w);
-          });
-
-          return bulkSet;
-        });
-      }
-
-      setSuggestion(sugg => (sugg + " " + selectedPortion).trim());
-      setClipboardText(null);
-      setBulkCorrections(new Set());
-      setSelectedIndex(null);
-      changeHeight(appRef.current.offsetHeight);
-    }
-    window.ipcRenderer.send("iNeedFocus");
-  }, [changeHeight, clipboardText, fetchAutocomplete, isCapitalized]);
+  }, [changeHeight, processClipboardText, resetState]);
 
   const onExternalSelect = useCallback(
     source => {
@@ -230,20 +209,14 @@ export default function() {
         value: finalResult,
         source
       });
-
-      const newHistory = Array.from(
-        new Set([...suggestionHistory, finalResult.toLowerCase()])
-      );
-
-      setSuggestionHistory(newHistory);
     },
-    [finalResult, suggestionHistory]
+    [finalResult]
   );
 
   const onInputChange = useCallback(
     async e => {
       const { value } = e.target;
-      setClipboardText(null);
+
       setBulkCorrections(new Set());
       setQuery(value);
       if (value.charAt(0) === ":") {
@@ -252,16 +225,16 @@ export default function() {
         changeHeight(368);
       } else {
         setEmojiMode(false);
-        setSelectedIndex(0);
         setSelectionCount(0);
 
         if (value.length === 0) {
           changeHeight(46);
           setSuggestion("");
         } else {
-          const result = await fetchAutocomplete(value, true);
+          const result = await fetchAutocomplete(value);
           setSuggestion(result);
           setSelectionCount(result.split(" ").length);
+          console.log(appRef.current.offsetHeight);
           changeHeight(appRef.current.offsetHeight);
         }
       }
@@ -308,20 +281,9 @@ export default function() {
   );
 
   const onEnterPress = useCallback(() => {
-    if (clipboardText) {
-      processClipboardText();
-      return;
-    }
-
     window.ipcRenderer.send("type", finalResult);
     window.ipcRenderer.send("hide");
-
-    const newHistory = Array.from(
-      new Set([...suggestionHistory, finalResult.toLowerCase()])
-    );
-
-    setSuggestionHistory(newHistory);
-  }, [clipboardText, finalResult, processClipboardText, suggestionHistory]);
+  }, [finalResult]);
 
   const onEmojiSelect = useCallback(emoji => {
     window.ipcRenderer.send("type", emoji);
@@ -329,7 +291,9 @@ export default function() {
   }, []);
 
   const onArrowLeft = useCallback(() => {
-    if (selectedIndex > 0) {
+    if (selectedIndex === null) {
+      setSelectedIndex(0);
+    } else if (selectedIndex > 0) {
       setSelectedIndex(selectedIndex - 1);
     } else {
       setSelectedIndex(selectionCount - 1);
@@ -337,7 +301,7 @@ export default function() {
   }, [selectedIndex, selectionCount]);
 
   const onArrowRight = useCallback(() => {
-    if (selectedIndex < selectionCount - 1) {
+    if (selectedIndex === null || selectedIndex < selectionCount - 1) {
       setSelectedIndex(selectedIndex + 1);
     } else {
       setSelectedIndex(0);
@@ -390,7 +354,6 @@ export default function() {
       />
       <div className="input-wrapper">
         <input
-          placeholder={clipboardText ? clipboardText : null}
           autoFocus
           ref={input}
           className="main-input"
