@@ -52,6 +52,7 @@ export default function({ search = "", visible, onSelect }) {
         case "Enter": {
           const selected = emojiIndex.emojis[filtered[selectedIndex]];
           onSelect(selected.native);
+          break;
         }
         default:
           break;

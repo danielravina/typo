@@ -66,6 +66,12 @@
   color: var(--text);
 }
 
+header {
+  background: #68d391;
+  height: 6px;
+  width: 100%;
+}
+
 .dark ::placeholder {
   color: rgba(238, 238, 238, 0.7);
 }
@@ -81,7 +87,7 @@
 }
 
 .corrected {
-  color: green;
+  color: #48bb78;
 }
 
 body {
@@ -134,12 +140,12 @@ body {
 
 .selected {
   position: relative;
-  background: var(--fg);
+  background: #e2e8f0;
   color: var(--text);
 }
 
 .input-wrapper {
-  height: 46px;
+  height: 55px;
   display: flex;
   align-items: stretch;
   justify-content: center;
@@ -264,8 +270,6 @@ body {
   width: 24px;
   height: 24px;
   display: block;
-  // align-items: center;
-  // justify-content: center;
 }
 
 .emoji-mart-category .emoji-mart-emoji:hover:before {

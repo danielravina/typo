@@ -11,10 +11,9 @@ import "emoji-mart/css/emoji-mart.css";
 import classnames from "classnames";
 import fetchJsonp from "fetch-jsonp";
 import titleCase from "ap-style-title-case";
-import fuzzy from "fuzzy";
 import EmojiPicker from "./EmojiPicker";
-import ellipsis from "text-ellipsis";
 
+const DEFAULT_HEIGHT = 61;
 const SUGGESTIONS_URL =
   "https://suggestqueries.google.com/complete/search?client=firefox&q=";
 
@@ -70,6 +69,8 @@ export default function() {
   const input = useRef(null);
   const appRef = useRef(null);
 
+  const isTwoLines = useMemo(() => suggestion.length > 20, [suggestion]);
+
   const changeHeight = useCallback(height => {
     window.ipcRenderer.send("changeHeight", height);
   }, []);
@@ -85,7 +86,7 @@ export default function() {
     const val = suggestion;
     input.current.value = "";
     input.current.value = val;
-    setQuery(val);
+    setQuery(val + " ");
     setSelectedIndex(null);
   }, [suggestion]);
 
@@ -103,12 +104,16 @@ export default function() {
     }
   }, [suggestion, shiftPressed]);
 
+  const suggestionWords = useMemo(() => {
+    return formattedSuggestion.split(" ");
+  }, [formattedSuggestion]);
+
   const finalResult = useMemo(() => {
     if (selectedIndex === null) {
       return formattedSuggestion;
     }
-    return formattedSuggestion.split(" ")[selectedIndex];
-  }, [formattedSuggestion, selectedIndex]);
+    return suggestionWords[selectedIndex];
+  }, [formattedSuggestion, selectedIndex, suggestionWords]);
 
   const processClipboardText = useCallback(
     async clipboardText => {
@@ -176,8 +181,8 @@ export default function() {
         setSuggestion(sugg => (sugg + " " + selectedPortion).trim());
         changeHeight(appRef.current.offsetHeight);
       }
+
       setSelectedIndex(null);
-      window.ipcRenderer.send("iNeedFocus");
     },
     [changeHeight, fetchAutocomplete, isCapitalized, resetState]
   );
@@ -190,7 +195,7 @@ export default function() {
 
     window.ipcRenderer.on("window-shown", () => {
       input.current.focus();
-      changeHeight(46);
+      changeHeight(DEFAULT_HEIGHT);
     });
     window.ipcRenderer.on("window-hidden", () => {
       resetState();
@@ -228,13 +233,12 @@ export default function() {
         setSelectionCount(0);
 
         if (value.length === 0) {
-          changeHeight(46);
+          changeHeight(DEFAULT_HEIGHT);
           setSuggestion("");
         } else {
           const result = await fetchAutocomplete(value);
           setSuggestion(result);
           setSelectionCount(result.split(" ").length);
-          console.log(appRef.current.offsetHeight);
           changeHeight(appRef.current.offsetHeight);
         }
       }
@@ -311,6 +315,7 @@ export default function() {
   const onKeyDown = useCallback(
     e => {
       if (emojiMode) return;
+      console.log(e.key);
       switch (e.key) {
         case "Shift":
           setShiftPressed(true);
@@ -336,24 +341,30 @@ export default function() {
           e.preventDefault();
           onArrowLeft();
           break;
+        case "Backspace":
+          if (query.length === 0) {
+            window.ipcRenderer.send("hide");
+          }
+          break;
         default:
           break;
       }
     },
-    [emojiMode, onArrowLeft, onArrowRight, onEnterPress, onTabPress]
+    [
+      emojiMode,
+      onArrowLeft,
+      onArrowRight,
+      onEnterPress,
+      onTabPress,
+      query.length
+    ]
   );
-
-  const isTwoLines = useMemo(() => suggestion.length > 17, [suggestion]);
-
   return (
     <div className={`app ${colorTheme}`} ref={appRef}>
-      <EmojiPicker
-        search={query}
-        onSelect={onEmojiSelect}
-        visible={emojiMode}
-      />
+      <header></header>
       <div className="input-wrapper">
         <input
+          placeholder={"Start typing to see results"}
           autoFocus
           ref={input}
           className="main-input"
@@ -372,8 +383,8 @@ export default function() {
               selected: selectedIndex === null
             })}
           >
-            {formattedSuggestion.split(" ").map((w, i) => (
-              <>
+            {suggestionWords.map((w, i) => (
+              <React.Fragment key={w + i}>
                 <span
                   className={classnames("word", {
                     selected: query.length && i === selectedIndex,
@@ -382,13 +393,15 @@ export default function() {
                 >
                   {w}
                 </span>
-                <span className="spacer" />
-              </>
+                {i === suggestionWords.length - 1 ? null : (
+                  <span className="spacer" />
+                )}
+              </React.Fragment>
             ))}
           </span>
         </div>
       </div>
-      <div
+      {/* <div
         className={classnames("alt-options", {
           active: altPressed && query.length
         })}
@@ -407,6 +420,11 @@ export default function() {
           );
         })}
       </div>
+      <EmojiPicker
+        search={query}
+        onSelect={onEmojiSelect}
+        visible={emojiMode}
+      /> */}
     </div>
   );
 }

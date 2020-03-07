@@ -1,36 +1,27 @@
 const electron = require("electron");
-const { ipcMain, globalShortcut, shell, app, BrowserWindow, Tray } = electron;
+const defaultMenu = require("electron-default-menu");
+const {
+  Menu,
+  ipcMain,
+  globalShortcut,
+  shell,
+  app,
+  BrowserWindow,
+  Tray
+} = electron;
 const clipboard = require("electron-clipboard-extended");
 const { version } = require("./package.json");
 const isDev = process.env.NODE_ENV === "development";
 const path = require("path");
 const robot = require("robotjs");
 const axios = require("axios");
-const DEFAULT_WIDTH = 400;
-const DEFAULT_HEIGHT = 46;
+const DEFAULT_WIDTH = 450;
+const DEFAULT_HEIGHT = 61;
 
 let win;
 let tray;
 
-// const mb = menubar({
-//   preloadWindow: true,
-//   browserWindow: {
-//     resizable: true,
-//     width: DEFAULT_WIDTH,
-//     height: DEFAULT_HEIGHT,
-//     webPreferences: {
-//       preload: path.join(__dirname, "preload.js")
-//     },
-//     alwaysOnTop: true,
-//     show: true,
-//     center: true
-//   }
-// });
-
-app.dock.hide();
-
 function hideWindow() {
-  clipboard.clear();
   win.hide();
   app.hide();
   changeHeight(DEFAULT_HEIGHT);
@@ -56,7 +47,7 @@ function toggleWindow() {
 
 function initTray() {
   tray = new Tray(path.join(__dirname, "assets", "IconTemplate.png"));
-  tray.setToolTip("anem");
+  // tray.setToolTip("anem");
   tray.on("click", toggleWindow);
 }
 
@@ -68,7 +59,7 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: false
     },
-    resizable: false,
+    resizable: true,
     maximizable: false,
     transparent: true,
     frame: false,
@@ -112,12 +103,6 @@ function createWindow() {
     changeHeight(height);
   });
 
-  ipcMain.on("iNeedFocus", () => {
-    win.hide();
-    app.hide();
-    win.show();
-  });
-
   clipboard
     .on("text-changed", () => {
       globalShortcut.register("Command+F", () => {
@@ -141,6 +126,8 @@ app.on("window-all-closed", () => {
 });
 
 app.on("ready", () => {
+  const menu = defaultMenu(app, shell);
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menu));
   createWindow();
   initTray();
 });
