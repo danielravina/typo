@@ -111,14 +111,21 @@ function createWindow() {
 
   clipboard
     .on("text-changed", () => {
-      globalShortcut.register("Command+F", () => {
-        showWindow();
-        const text = clipboard.readText();
-        if (text.length) {
-          win.webContents.send("clipboard-text", text);
-          clipboard.clear();
+      let clicks = 1;
+      globalShortcut.register("Command+C", () => {
+        clicks++;
+        if (clicks === 3) {
+          showWindow();
+          const text = clipboard.readText();
+          if (text.length) {
+            win.webContents.send("clipboard-text", text);
+          }
+          globalShortcut.unregister("Command+C");
         }
-        globalShortcut.unregister("Command+F");
+
+        setTimeout(() => {
+          globalShortcut.unregister("Command+C");
+        }, 500);
       });
 
       setTimeout(() => {

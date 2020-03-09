@@ -4,11 +4,12 @@
   "private": true,
   "main": "main.js",
   "dependencies": {
+    "axios": "^0.19.0",
     "electron-clipboard-extended": "github:danielravina/electron-clipboard-extended",
-    "menubar": "^7.1.0",
-    "robotjs": "^0.5.1",
     "electron-default-menu": "^1.0.1",
-    "axios": "^0.19.0"
+    "menubar": "^7.1.0",
+    "mousetrap": "^1.6.5",
+    "robotjs": "^0.5.1"
   },
   "scripts": {
     "start": "PORT=9000 react-scripts start",

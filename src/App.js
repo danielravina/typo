@@ -12,7 +12,7 @@ import classnames from "classnames";
 import fetchJsonp from "fetch-jsonp";
 import titleCase from "ap-style-title-case";
 import EmojiPicker from "./EmojiPicker";
-
+import Diff from "diff";
 const DEFAULT_HEIGHT = 61;
 const SUGGESTIONS_URL =
   "https://suggestqueries.google.com/complete/search?client=firefox&q=";
