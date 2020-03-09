@@ -7,19 +7,25 @@ const {
   shell,
   app,
   BrowserWindow,
-  Tray
+  Tray,
+  systemPreferences
 } = electron;
 const clipboard = require("electron-clipboard-extended");
 const { version } = require("./package.json");
-const isDev = process.env.NODE_ENV === "development";
 const path = require("path");
 const robot = require("robotjs");
 const axios = require("axios");
+
+const isDev = process.env.NODE_ENV === "development";
 const DEFAULT_WIDTH = 450;
 const DEFAULT_HEIGHT = 61;
 
 let win;
 let tray;
+
+if (isDev) app.dock.hide();
+
+systemPreferences.isTrustedAccessibilityClient(true);
 
 function hideWindow() {
   win.hide();
@@ -110,6 +116,7 @@ function createWindow() {
         const text = clipboard.readText();
         if (text.length) {
           win.webContents.send("clipboard-text", text);
+          clipboard.clear();
         }
         globalShortcut.unregister("Command+F");
       });
