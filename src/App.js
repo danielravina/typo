@@ -12,7 +12,10 @@ import classnames from "classnames";
 import fetchJsonp from "fetch-jsonp";
 import titleCase from "ap-style-title-case";
 import EmojiPicker from "./EmojiPicker";
-import Diff from "diff";
+
+const Diff = require("diff"); // for some reason need 'require'
+const strip = (t = "") => t.replace(/[,;:!?]+$/, "").trim();
+
 const DEFAULT_HEIGHT = 61;
 const SUGGESTIONS_URL =
   "https://suggestqueries.google.com/complete/search?client=firefox&q=";
@@ -47,21 +50,21 @@ const altOptions = {
 export default function() {
   const [query, setQuery] = useState("");
   const [suggestion, setSuggestion] = useState("");
-  const [altPressed, setAltPressed] = useState(false);
-  const [shiftPressed, setShiftPressed] = useState(false);
+  const [isAltPressed, setIsAltPressed] = useState(false);
+  const [isShiftPressed, setIsShiftPressed] = useState(false);
+  const [isCommandPressed, setIsCommandPressed] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [colorTheme, setColorTheme] = useState(null);
   const [chosenEmoji, setChosenEmoji] = useState(null);
   const [selectionCount, setSelectionCount] = useState(0);
   const [emojiMode, setEmojiMode] = useState(0);
-  const [bulkCorrections, setBulkCorrections] = useState(new Set());
-
+  const [corrections, setCorrections] = useState(new Set());
   const resetState = useCallback(() => {
     setQuery("");
     setEmojiMode(false);
     setSuggestion("");
-    setAltPressed(false);
-    setShiftPressed(false);
+    setIsAltPressed(false);
+    setIsShiftPressed(false);
     setSelectedIndex(null);
     setSelectionCount(0);
   }, []);
@@ -93,16 +96,17 @@ export default function() {
   const fetchAutocomplete = useCallback(async value => {
     const response = await fetchJsonp(SUGGESTIONS_URL + value);
     const results = await response.json();
+
     return results[1][0] || "";
   }, []);
 
   const formattedSuggestion = useMemo(() => {
-    if (shiftPressed) {
+    if (isShiftPressed) {
       return titleCase(suggestion);
     } else {
       return suggestion;
     }
-  }, [suggestion, shiftPressed]);
+  }, [suggestion, isShiftPressed]);
 
   const suggestionWords = useMemo(() => {
     return formattedSuggestion.split(" ");
@@ -118,13 +122,24 @@ export default function() {
   const processClipboardText = useCallback(
     async clipboardText => {
       resetState();
+      setQuery(clipboardText);
+
+      const fetchEverything = await fetchAutocomplete(clipboardText);
+      if (fetchEverything) {
+        setSuggestion(fetchEverything);
+        setSelectedIndex(null);
+        changeHeight(appRef.current.offsetHeight);
+        return;
+      }
+
       const chunks = [];
       const words = clipboardText.replace(/\u21b5|\n/g, "").split(" ");
-      setQuery(clipboardText);
 
       words.forEach((word, i) => {
         const lastWord = words[i - 1];
-        if (isCapitalized(word) && isCapitalized(lastWord)) {
+        const endWithPunct = lastWord && lastWord.match(/[,;:!.-?]+$/);
+
+        if (isCapitalized(word) && isCapitalized(lastWord) && !endWithPunct) {
           chunks[chunks.length - 1] = `${lastWord} ${word}`;
         } else {
           chunks.push(word);
@@ -145,6 +160,7 @@ export default function() {
               .join("");
 
             if (warmup.length) {
+              if (warmup.match(/[.]/)) continue;
               const result = await fetchAutocomplete(warmup + " ");
               if (!result.length) continue;
               fetchedChunk = result;
@@ -157,25 +173,13 @@ export default function() {
           .slice(0, toFetch.split(" ").length)
           .join(" ");
 
-        const punctMatch = toFetch.match(/[,;:]+$/);
+        const punctMatch = toFetch.match(/[.,;:!?]+$/);
         if (punctMatch !== null) {
           selectedPortion = selectedPortion.concat(punctMatch[0]);
         }
 
         if (isCapitalized(toFetch)) {
           selectedPortion = titleCase(selectedPortion);
-        }
-
-        if (
-          selectedPortion.trim().toLowerCase() !== toFetch.trim().toLowerCase()
-        ) {
-          setBulkCorrections(bulkSet => {
-            selectedPortion.split(" ").forEach(w => {
-              bulkSet.add(w);
-            });
-
-            return bulkSet;
-          });
         }
 
         setSuggestion(sugg => (sugg + " " + selectedPortion).trim());
@@ -186,6 +190,19 @@ export default function() {
     },
     [changeHeight, fetchAutocomplete, isCapitalized, resetState]
   );
+
+  useEffect(() => {
+    const diff = Diff.diffWords(query, suggestion);
+    setCorrections(new Set());
+    diff.forEach(({ added, value }) => {
+      if (added) {
+        setCorrections(corr => {
+          corr.add(strip(value));
+          return corr;
+        });
+      }
+    });
+  }, [query, suggestion]);
 
   useEffect(() => {
     window.ipcRenderer.on("clipboard-text", (e, text) => {
@@ -222,7 +239,6 @@ export default function() {
     async e => {
       const { value } = e.target;
 
-      setBulkCorrections(new Set());
       setQuery(value);
       if (value.charAt(0) === ":") {
         setSelectedIndex(0);
@@ -249,40 +265,18 @@ export default function() {
   const onKeyUp = useCallback(e => {
     switch (e.key) {
       case "Shift":
-        setShiftPressed(false);
+        setIsShiftPressed(false);
         break;
       case "Alt":
-        setAltPressed(false);
+        setIsAltPressed(false);
+        break;
+      case "Meta":
+        setIsCommandPressed(false);
         break;
       default:
         break;
     }
   }, []);
-
-  const onKeyPress = useCallback(
-    e => {
-      if (altPressed) {
-        e.preventDefault();
-        switch (e.key) {
-          case "∑":
-            onExternalSelect("wikipedia.org");
-            break;
-          case "∂":
-            onExternalSelect("dictionary.com");
-            break;
-          case "†":
-            onExternalSelect("thesaurus.com");
-            break;
-          case "©":
-            onExternalSelect("google.com");
-            break;
-          default:
-            break;
-        }
-      }
-    },
-    [altPressed, onExternalSelect]
-  );
 
   const onEnterPress = useCallback(() => {
     window.ipcRenderer.send("type", finalResult);
@@ -315,13 +309,15 @@ export default function() {
   const onKeyDown = useCallback(
     e => {
       if (emojiMode) return;
-      console.log(e.key);
       switch (e.key) {
         case "Shift":
-          setShiftPressed(true);
+          setIsShiftPressed(true);
           break;
         case "Alt":
-          setAltPressed(true);
+          setIsAltPressed(true);
+          break;
+        case "Meta":
+          setIsCommandPressed(true);
           break;
         case "Escape":
           window.ipcRenderer.send("hide");
@@ -334,17 +330,33 @@ export default function() {
           onEnterPress();
           break;
         case "ArrowRight":
-          e.preventDefault();
-          onArrowRight();
+          if (isAltPressed) {
+            e.preventDefault();
+            onArrowRight();
+          }
           break;
         case "ArrowLeft":
-          e.preventDefault();
-          onArrowLeft();
+          if (isAltPressed) {
+            e.preventDefault();
+            onArrowLeft();
+          }
           break;
         case "Backspace":
           if (query.length === 0) {
             window.ipcRenderer.send("hide");
           }
+          break;
+        case "1":
+          if (isCommandPressed) onExternalSelect("wikipedia.org");
+          break;
+        case "2":
+          if (isCommandPressed) onExternalSelect("dictionary.com");
+          break;
+        case "3":
+          if (isCommandPressed) onExternalSelect("thesaurus.com");
+          break;
+        case "4":
+          if (isCommandPressed) onExternalSelect("google.com");
           break;
         default:
           break;
@@ -352,16 +364,19 @@ export default function() {
     },
     [
       emojiMode,
+      isAltPressed,
+      isCommandPressed,
       onArrowLeft,
       onArrowRight,
       onEnterPress,
+      onExternalSelect,
       onTabPress,
       query.length
     ]
   );
   return (
     <div className={`app ${colorTheme}`} ref={appRef}>
-      <header></header>
+      <header />
       <div className="input-wrapper">
         <input
           placeholder={"Start typing to see results"}
@@ -372,15 +387,13 @@ export default function() {
           onChange={onInputChange}
           onKeyDown={onKeyDown}
           onKeyUp={onKeyUp}
-          onKeyPress={onKeyPress}
         />
       </div>
       <div className="suggestion-wrapper">
         <div className="suggestion-body">
           <span
             className={classnames("suggestion-text animated fadeIn", {
-              reduced: isTwoLines,
-              selected: selectedIndex === null
+              reduced: isTwoLines
             })}
           >
             {suggestionWords.map((w, i) => (
@@ -388,7 +401,7 @@ export default function() {
                 <span
                   className={classnames("word", {
                     selected: query.length && i === selectedIndex,
-                    corrected: bulkCorrections.has(w)
+                    corrected: corrections.has(strip(w))
                   })}
                 >
                   {w}
@@ -403,7 +416,7 @@ export default function() {
       </div>
       {/* <div
         className={classnames("alt-options", {
-          active: altPressed && query.length
+          active: isAltPressed && query.length
         })}
       >
         {Object.keys(altOptions).map(alt => {

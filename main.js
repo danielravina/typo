@@ -121,6 +121,7 @@ function createWindow() {
             win.webContents.send("clipboard-text", text);
           }
           globalShortcut.unregister("Command+C");
+          clipboard.clear();
         }
 
         setTimeout(() => {

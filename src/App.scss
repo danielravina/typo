@@ -87,7 +87,7 @@ header {
 }
 
 .corrected {
-  color: #48bb78;
+  color: #48bb78 !important;
 }
 
 body {
@@ -107,9 +107,9 @@ body {
 .suggestion-wrapper {
   margin: 0;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  // flex-direction: column;
+  // align-items: center;
+  // justify-content: center;
   &.darken {
     filter: brightness(0);
   }
