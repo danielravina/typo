@@ -3,102 +3,52 @@ import "./App.scss";
 import React, {
   useMemo,
   useRef,
-  useState,
+  useContext,
   useCallback,
-  useEffect
+  useEffect,
+  useState
 } from "react";
+
 import "emoji-mart/css/emoji-mart.css";
 import classnames from "classnames";
-import fetchJsonp from "fetch-jsonp";
+import Mark from "./components/Mark";
 import titleCase from "ap-style-title-case";
-import EmojiPicker from "./EmojiPicker";
-
-const Diff = require("diff"); // for some reason need 'require'
-const strip = (t = "") => t.replace(/[,;:!?]+$/, "").trim();
-
-const DEFAULT_HEIGHT = 61;
-const SUGGESTIONS_URL =
-  "https://suggestqueries.google.com/complete/search?client=firefox&q=";
-
-const altOptions = {
-  google: {
-    key: "G",
-    address: "google.com",
-    label: "oogle",
-    icon: require("./images/google_logo.png")
-  },
-  wikipedia: {
-    key: "W",
-    address: "wikipedia.org",
-    label: "ikipedia",
-    icon: require("./images/wiki_logo.png")
-  },
-  thesaurus: {
-    key: "T",
-    address: "thesaurus.com",
-    label: "hesaurus",
-    icon: require("./images/theasaurus_logo.png")
-  },
-  dictionary: {
-    key: "D",
-    address: "dictionary.com",
-    label: "ictionary",
-    icon: require("./images/dict_logo.png")
-  }
-};
+import EmojiPicker from "./components/EmojiPicker";
+import AppContext from "./context/AppContext";
+import processClipboard from "./lib/processClipboard";
+import fetchAutocomplete from "./lib/fetchAutocomplete";
+import { strip, changeHeight } from "./lib/utils";
+import { DEFAULT_HEIGHT } from "./lib/constants";
 
 export default function() {
-  const [query, setQuery] = useState("");
-  const [suggestion, setSuggestion] = useState("");
-  const [isAltPressed, setIsAltPressed] = useState(false);
-  const [isShiftPressed, setIsShiftPressed] = useState(false);
-  const [isCommandPressed, setIsCommandPressed] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(null);
-  const [colorTheme, setColorTheme] = useState(null);
-  const [chosenEmoji, setChosenEmoji] = useState(null);
-  const [selectionCount, setSelectionCount] = useState(0);
-  const [emojiMode, setEmojiMode] = useState(0);
-  const [corrections, setCorrections] = useState(new Set());
-  const resetState = useCallback(() => {
-    setQuery("");
-    setEmojiMode(false);
-    setSuggestion("");
-    setIsAltPressed(false);
-    setIsShiftPressed(false);
-    setSelectedIndex(null);
-    setSelectionCount(0);
-  }, []);
-
   const input = useRef(null);
   const appRef = useRef(null);
 
-  const isTwoLines = useMemo(() => suggestion.length > 20, [suggestion]);
-
-  const changeHeight = useCallback(height => {
-    window.ipcRenderer.send("changeHeight", height);
-  }, []);
-
-  const isCapitalized = useCallback(word => {
-    if (!word) return null;
-    if (/^\d+$/.test(word)) return false; // number
-    return word[0].toUpperCase() === word[0];
-  }, []);
+  const {
+    query,
+    suggestion,
+    isAltPressed,
+    isShiftPressed,
+    isCommandPressed,
+    selectedIndex,
+    colorTheme,
+    chosenEmoji,
+    selectionCount,
+    emojiMode,
+    updateContext,
+    resetContext,
+    clipboardText,
+    corrections
+  } = useContext(AppContext);
 
   const onTabPress = useCallback(() => {
     input.current.focus();
     const val = suggestion;
     input.current.value = "";
     input.current.value = val;
-    setQuery(val + " ");
-    setSelectedIndex(null);
-  }, [suggestion]);
 
-  const fetchAutocomplete = useCallback(async value => {
-    const response = await fetchJsonp(SUGGESTIONS_URL + value);
-    const results = await response.json();
-
-    return results[1][0] || "";
-  }, []);
+    updateContext({ query: val + " ", selectedIndex: null });
+  }, [suggestion, updateContext]);
 
   const formattedSuggestion = useMemo(() => {
     if (isShiftPressed) {
@@ -106,7 +56,7 @@ export default function() {
     } else {
       return suggestion;
     }
-  }, [suggestion, isShiftPressed]);
+  }, [isShiftPressed, suggestion]);
 
   const suggestionWords = useMemo(() => {
     return formattedSuggestion.split(" ");
@@ -119,110 +69,24 @@ export default function() {
     return suggestionWords[selectedIndex];
   }, [formattedSuggestion, selectedIndex, suggestionWords]);
 
-  const processClipboardText = useCallback(
-    async clipboardText => {
-      resetState();
-      setQuery(clipboardText);
-
-      const fetchEverything = await fetchAutocomplete(clipboardText);
-      if (fetchEverything) {
-        setSuggestion(fetchEverything);
-        setSelectedIndex(null);
-        changeHeight(appRef.current.offsetHeight);
-        return;
-      }
-
-      const chunks = [];
-      const words = clipboardText.replace(/\u21b5|\n/g, "").split(" ");
-
-      words.forEach((word, i) => {
-        const lastWord = words[i - 1];
-        const endWithPunct = lastWord && lastWord.match(/[,;:!.-?]+$/);
-
-        if (isCapitalized(word) && isCapitalized(lastWord) && !endWithPunct) {
-          chunks[chunks.length - 1] = `${lastWord} ${word}`;
-        } else {
-          chunks.push(word);
-        }
-      });
-
-      for (let i = 0; i < chunks.length; ++i) {
-        const toFetch = chunks[i];
-        let fetchedChunk = "";
-
-        if (toFetch.length === 1) {
-          fetchedChunk = toFetch;
-        } else {
-          for (let j = 2; j <= toFetch.length; ++j) {
-            const warmup = toFetch
-              .split("")
-              .slice(0, j)
-              .join("");
-
-            if (warmup.length) {
-              if (warmup.match(/[.]/)) continue;
-              const result = await fetchAutocomplete(warmup + " ");
-              if (!result.length) continue;
-              fetchedChunk = result;
-            }
-          }
-        }
-
-        let selectedPortion = fetchedChunk
-          .split(" ")
-          .slice(0, toFetch.split(" ").length)
-          .join(" ");
-
-        const punctMatch = toFetch.match(/[.,;:!?]+$/);
-        if (punctMatch !== null) {
-          selectedPortion = selectedPortion.concat(punctMatch[0]);
-        }
-
-        if (isCapitalized(toFetch)) {
-          selectedPortion = titleCase(selectedPortion);
-        }
-
-        setSuggestion(sugg => (sugg + " " + selectedPortion).trim());
-        changeHeight(appRef.current.offsetHeight);
-      }
-
-      setSelectedIndex(null);
-    },
-    [changeHeight, fetchAutocomplete, isCapitalized, resetState]
-  );
-
-  useEffect(() => {
-    const diff = Diff.diffWords(query, suggestion);
-    setCorrections(new Set());
-    diff.forEach(({ added, value }) => {
-      if (added) {
-        setCorrections(corr => {
-          corr.add(strip(value));
-          return corr;
-        });
-      }
-    });
-  }, [query, suggestion]);
-
   useEffect(() => {
     window.ipcRenderer.on("clipboard-text", (e, text) => {
       if (!text.length) return;
-      processClipboardText(text);
+      setTimeout(() => {
+        changeHeight(DEFAULT_HEIGHT + 25);
+        updateContext({ clipboardText: text });
+      }, 100);
     });
 
     window.ipcRenderer.on("window-shown", () => {
       input.current.focus();
       changeHeight(DEFAULT_HEIGHT);
     });
-    window.ipcRenderer.on("window-hidden", () => {
-      resetState();
-    });
 
-    window.ipcRenderer.on("set-emoji-mode", () => {
-      setQuery(":");
-      setEmojiMode(true);
+    window.ipcRenderer.on("window-hidden", () => {
+      resetContext();
     });
-  }, [changeHeight, processClipboardText, resetState]);
+  }, [resetContext, updateContext]);
 
   const onExternalSelect = useCallback(
     source => {
@@ -239,49 +103,67 @@ export default function() {
     async e => {
       const { value } = e.target;
 
-      setQuery(value);
+      updateContext({ query: value });
       if (value.charAt(0) === ":") {
-        setSelectedIndex(0);
-        setEmojiMode(true);
+        updateContext({ emojiMode: true });
         changeHeight(368);
       } else {
-        setEmojiMode(false);
-        setSelectionCount(0);
+        updateContext({ emojiMode: false });
 
         if (value.length === 0) {
           changeHeight(DEFAULT_HEIGHT);
-          setSuggestion("");
+          updateContext({ suggestion: "" });
         } else {
           const result = await fetchAutocomplete(value);
-          setSuggestion(result);
-          setSelectionCount(result.split(" ").length);
+
+          updateContext({
+            suggestion: result,
+            selectionCount: result.split(" ").length
+          });
+
           changeHeight(appRef.current.offsetHeight);
         }
       }
     },
-    [changeHeight, fetchAutocomplete]
+    [updateContext]
   );
 
-  const onKeyUp = useCallback(e => {
-    switch (e.key) {
-      case "Shift":
-        setIsShiftPressed(false);
-        break;
-      case "Alt":
-        setIsAltPressed(false);
-        break;
-      case "Meta":
-        setIsCommandPressed(false);
-        break;
-      default:
-        break;
-    }
-  }, []);
+  const onKeyUp = useCallback(
+    e => {
+      switch (e.key) {
+        case "Shift":
+          updateContext({ isShiftPressed: false });
+          break;
+        case "Alt":
+          updateContext({ isAltPressed: false });
+          break;
+        case "Meta":
+          updateContext({ isCommandPressed: false });
+          break;
+        default:
+          break;
+      }
+    },
+    [updateContext]
+  );
 
-  const onEnterPress = useCallback(() => {
-    window.ipcRenderer.send("type", finalResult);
-    window.ipcRenderer.send("hide");
-  }, [finalResult]);
+  const onEnterPress = useCallback(async () => {
+    if (clipboardText && query.length === 0) {
+      updateContext({
+        isLoading: true,
+        query: clipboardText
+      });
+
+      const suggestion = await processClipboard(clipboardText);
+      // galapagos islands is a marvelous place
+      updateContext({ suggestion });
+
+      changeHeight(appRef.current.offsetHeight);
+    } else {
+      window.ipcRenderer.send("type", finalResult);
+      window.ipcRenderer.send("hide");
+    }
+  }, [clipboardText, finalResult, query.length, updateContext]);
 
   const onEmojiSelect = useCallback(emoji => {
     window.ipcRenderer.send("type", emoji);
@@ -290,34 +172,31 @@ export default function() {
 
   const onArrowLeft = useCallback(() => {
     if (selectedIndex === null) {
-      setSelectedIndex(0);
+      updateContext({ selectedIndex: 0 });
     } else if (selectedIndex > 0) {
-      setSelectedIndex(selectedIndex - 1);
+      updateContext({ selectedIndex: selectedIndex - 1 });
     } else {
-      setSelectedIndex(selectionCount - 1);
+      updateContext({ selectedIndex: selectionCount - 1 });
     }
-  }, [selectedIndex, selectionCount]);
+  }, [selectedIndex, selectionCount, updateContext]);
 
   const onArrowRight = useCallback(() => {
     if (selectedIndex === null || selectedIndex < selectionCount - 1) {
-      setSelectedIndex(selectedIndex + 1);
+      updateContext({ selectedIndex: selectedIndex + 1 });
     } else {
-      setSelectedIndex(0);
+      updateContext({ selectedIndex: 0 });
     }
-  }, [selectedIndex, selectionCount]);
+  }, [selectedIndex, selectionCount, updateContext]);
 
   const onKeyDown = useCallback(
     e => {
       if (emojiMode) return;
       switch (e.key) {
         case "Shift":
-          setIsShiftPressed(true);
-          break;
-        case "Alt":
-          setIsAltPressed(true);
+          updateContext({ isShiftPressed: true });
           break;
         case "Meta":
-          setIsCommandPressed(true);
+          updateContext({ isCommandPressed: true });
           break;
         case "Escape":
           window.ipcRenderer.send("hide");
@@ -371,7 +250,8 @@ export default function() {
       onEnterPress,
       onExternalSelect,
       onTabPress,
-      query.length
+      query.length,
+      updateContext
     ]
   );
   return (
@@ -389,13 +269,9 @@ export default function() {
           onKeyUp={onKeyUp}
         />
       </div>
-      <div className="suggestion-wrapper">
+      <div className="suggestion-wrapper" style={{ paddingBottom: "25px" }}>
         <div className="suggestion-body">
-          <span
-            className={classnames("suggestion-text animated fadeIn", {
-              reduced: isTwoLines
-            })}
-          >
+          <span className="suggestion-text animated fadeIn">
             {suggestionWords.map((w, i) => (
               <React.Fragment key={w + i}>
                 <span
@@ -413,6 +289,7 @@ export default function() {
             ))}
           </span>
         </div>
+        <footer>{clipboardText ? <i>Paste: {clipboardText}</i> : null}</footer>
       </div>
       {/* <div
         className={classnames("alt-options", {
@@ -433,11 +310,12 @@ export default function() {
           );
         })}
       </div>
+       */}
       <EmojiPicker
         search={query}
         onSelect={onEmojiSelect}
         visible={emojiMode}
-      /> */}
+      />
     </div>
   );
 }

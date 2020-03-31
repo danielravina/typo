@@ -22,8 +22,11 @@ const DEFAULT_HEIGHT = 61;
 
 let win;
 let tray;
+let clip = {};
 
-if (isDev) app.dock.hide();
+if (!isDev) {
+  app.dock.hide();
+}
 
 systemPreferences.isTrustedAccessibilityClient(true);
 
@@ -39,6 +42,15 @@ function changeHeight(height) {
 }
 
 function showWindow() {
+  const text = clipboard.readText();
+  const age = Date.now() - clip.ts;
+
+  if (age < 3000) {
+    win.webContents.send("clipboard-text", text);
+    setTimeout(() => {
+      clipboard.clear();
+    }, 3000);
+  }
   win.show();
   win.webContents.send("window-shown");
 }
@@ -53,7 +65,6 @@ function toggleWindow() {
 
 function initTray() {
   tray = new Tray(path.join(__dirname, "assets", "IconTemplate.png"));
-  // tray.setToolTip("anem");
   tray.on("click", toggleWindow);
 }
 
@@ -75,8 +86,6 @@ function createWindow() {
 
   win.loadURL("http://127.0.0.1:9000");
 
-  globalShortcut.register("Control+Space", toggleWindow);
-
   ipcMain.on("type", (e, value) => {
     setTimeout(() => {
       robot.typeString(value);
@@ -95,7 +104,7 @@ function createWindow() {
       `https://www.google.com/search?q=site%3A${source}+${value}&sourceid=chrome&ie=UTF-8`
     );
 
-    const match = data.match(/url\?q=([a-zA-z:\/\/\.-]*)/);
+    const match = data.match(/url\?q=([a-zA-z:\/\.-]*)/);
     const link = match[1];
 
     shell.openExternal(link);
@@ -109,33 +118,21 @@ function createWindow() {
     changeHeight(height);
   });
 
+  globalShortcut.register("Ctrl+Space", toggleWindow);
+
   clipboard
     .on("text-changed", () => {
-      let clicks = 1;
-      globalShortcut.register("Command+C", () => {
-        clicks++;
-        if (clicks === 3) {
-          showWindow();
-          const text = clipboard.readText();
-          if (text.length) {
-            win.webContents.send("clipboard-text", text);
-          }
-          globalShortcut.unregister("Command+C");
-          clipboard.clear();
-        }
-
-        setTimeout(() => {
-          globalShortcut.unregister("Command+C");
-        }, 500);
-      });
-
-      setTimeout(() => {
-        globalShortcut.unregister("Command+F");
-      }, 1000);
+      let currentText = clipboard.readText();
+      clip = {
+        text: currentText,
+        ts: Date.now()
+      };
     })
     .startWatching();
 }
+
 // my favourite movie is avengers endgame
+
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
