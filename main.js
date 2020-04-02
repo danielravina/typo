@@ -19,7 +19,7 @@ const axios = require("axios");
 const isDev = process.env.NODE_ENV === "development";
 const DEFAULT_WIDTH = 450;
 const DEFAULT_HEIGHT = 61;
-
+let output = null;
 let win;
 let tray;
 let clip = {};
@@ -86,10 +86,15 @@ function createWindow() {
 
   win.loadURL("http://127.0.0.1:9000");
 
+  win.on("blur", () => {
+    if (output) {
+      robot.typeString(output);
+      output = null;
+    }
+  });
+
   ipcMain.on("type", (e, value) => {
-    setTimeout(() => {
-      robot.typeString(value);
-    }, 50);
+    output = value;
   });
 
   ipcMain.on("openExternal", async (e, { value, source }) => {
