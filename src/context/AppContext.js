@@ -1,5 +1,6 @@
-import React, { useEffect, useCallback, useState } from "react";
+import React, { useEffect, useCallback, useState, useMemo } from "react";
 import { strip } from "../lib/utils";
+import titleCase from "ap-style-title-case";
 
 const Diff = require("diff"); // for some reason need 'require'
 
@@ -8,7 +9,7 @@ const initialState = {
   suggestion: "",
   isAltPressed: false,
   isShiftPressed: false,
-  isCommandPressed: false,
+  isMetaPressed: false,
   selectedIndex: null,
   colorTheme: null,
   chosenEmoji: null,
@@ -22,6 +23,26 @@ const AppContext = React.createContext(initialState);
 function AppProvider({ children }) {
   const [state, setState] = useState(initialState);
   const [corrections, setCorrections] = useState(new Set());
+
+  const suggestion = useMemo(() => {
+    if (state.isShiftPressed) {
+      return titleCase(state.suggestion);
+    } else {
+      return state.suggestion;
+    }
+  }, [state.isShiftPressed, state.suggestion]);
+
+  const suggestionWords = useMemo(() => {
+    return suggestion.split(" ");
+  }, [suggestion]);
+
+  const finalResult = useMemo(() => {
+    if (state.selectedIndex === null) {
+      return suggestion;
+    }
+
+    return suggestionWords[state.selectedIndex];
+  }, [state.selectedIndex, suggestion, suggestionWords]);
 
   const updateContext = useCallback(payload => {
     setState(oldState => ({ ...oldState, ...payload }));
@@ -59,9 +80,12 @@ function AppProvider({ children }) {
     <AppContext.Provider
       value={{
         ...state,
+        suggestion,
         updateContext,
         resetContext,
-        corrections
+        corrections,
+        suggestionWords,
+        finalResult
       }}
     >
       {children}

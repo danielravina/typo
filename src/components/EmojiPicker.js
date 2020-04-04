@@ -1,11 +1,32 @@
-import React, { useMemo, useState, useCallback, useEffect } from "react";
+import React, { useMemo, useContext, useCallback, useEffect } from "react";
 import "emoji-mart/css/emoji-mart.css";
 import { emojiIndex, Emoji } from "emoji-mart";
 import { categories } from "emoji-mart/data/apple.json";
 import classnames from "classnames";
+import EmojiContext from "../context/EmojiContext";
+
+const Category = React.memo(({ name, emojis }) => {
+  return (
+    <div className={"emoji-mart-category"} key={name}>
+      <div className="emoji-mart-category-list">
+        {emojis.map((emoji, i) => (
+          <li
+            className={classnames({
+              "selected-emoji": i === selectedIndex
+            })}
+            key={emoji}
+          >
+            {console.log(name)}
+            <Emoji emoji={emoji} size={24} native={true} />
+          </li>
+        ))}
+      </div>
+    </div>
+  );
+});
 
 export default function({ search = "", visible, onSelect }) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const { selectedIndex, setSelectedIndex } = useContext(EmojiContext);
 
   const filtered = useMemo(() => {
     if (search.length < 2) return [];
@@ -58,7 +79,7 @@ export default function({ search = "", visible, onSelect }) {
           break;
       }
     },
-    [filtered, onSelect, selectedIndex, visible]
+    [filtered, onSelect, selectedIndex, setSelectedIndex, visible]
   );
 
   useEffect(() => {
@@ -70,20 +91,7 @@ export default function({ search = "", visible, onSelect }) {
 
   const all = useMemo(() => {
     return categories.map(({ name, emojis }) => {
-      return (
-        <div className={"emoji-mart-category"} key={name}>
-          <div className="emoji-mart-category-label">
-            <span>{name}</span>
-          </div>
-          <div className="emoji-mart-category-list">
-            {emojis.map((emoji, i) => (
-              <li key={emoji}>
-                <Emoji emoji={emoji} size={24} native={true} />
-              </li>
-            ))}
-          </div>
-        </div>
-      );
+      return <Category name={name} emojis={emojis} />;
     });
   }, []);
 

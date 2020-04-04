@@ -17,7 +17,7 @@ const robot = require("robotjs");
 const axios = require("axios");
 
 const isDev = process.env.NODE_ENV === "development";
-const DEFAULT_WIDTH = 450;
+const DEFAULT_WIDTH = 374;
 const DEFAULT_HEIGHT = 61;
 let output = null;
 let win;
@@ -38,7 +38,7 @@ function hideWindow() {
 }
 
 function changeHeight(height) {
-  win.setSize(DEFAULT_WIDTH, height, true);
+  win.setSize(DEFAULT_WIDTH, height);
 }
 
 function showWindow() {
@@ -90,6 +90,9 @@ function createWindow() {
     if (output) {
       robot.typeString(output);
       output = null;
+    }
+    if (!isDev) {
+      hideWindow();
     }
   });
 

@@ -1,35 +1,28 @@
 import "./App.scss";
 
-import React, {
-  useMemo,
-  useRef,
-  useContext,
-  useCallback,
-  useEffect,
-  useState
-} from "react";
+import React, { useRef, useCallback, useEffect } from "react";
 
 import "emoji-mart/css/emoji-mart.css";
 import classnames from "classnames";
-import Mark from "./components/Mark";
-import titleCase from "ap-style-title-case";
+
 import EmojiPicker from "./components/EmojiPicker";
-import AppContext from "./context/AppContext";
-import processClipboard from "./lib/processClipboard";
-import fetchAutocomplete from "./lib/fetchAutocomplete";
 import { strip, changeHeight } from "./lib/utils";
-import { DEFAULT_HEIGHT } from "./lib/constants";
+import { DEFAULT_HEIGHT, EMOJI_HEIGHT } from "./lib/constants";
+import useClipboard from "./hooks/useClipboard";
+import useAppContext from "./hooks/useAppContext";
+import useGoogleSuggestion from "./hooks/useGoogleSuggestion";
+import Mark from "./components/Mark";
+import Input from "./components/Input";
+import MetaOptions from "./components/MetaOptions";
 
 export default function() {
-  const input = useRef(null);
   const appRef = useRef(null);
+  const { process } = useClipboard();
+  const fetchGoogle = useGoogleSuggestion();
 
   const {
     query,
     suggestion,
-    isAltPressed,
-    isShiftPressed,
-    isCommandPressed,
     selectedIndex,
     colorTheme,
     chosenEmoji,
@@ -38,36 +31,55 @@ export default function() {
     updateContext,
     resetContext,
     clipboardText,
-    corrections
-  } = useContext(AppContext);
+    corrections,
+    suggestionWords,
+    finalResult
+  } = useAppContext();
 
-  const onTabPress = useCallback(() => {
-    input.current.focus();
-    const val = suggestion;
-    input.current.value = "";
-    input.current.value = val;
+  const onEmojiSelect = useCallback(emoji => {
+    window.ipcRenderer.send("type", emoji);
+    window.ipcRenderer.send("hide");
+  }, []);
 
-    updateContext({ query: val + " ", selectedIndex: null });
-  }, [suggestion, updateContext]);
+  const onEnterPress = useCallback(async () => {
+    if (clipboardText && query.length === 0) {
+      updateContext({
+        isLoading: true
+      });
 
-  const formattedSuggestion = useMemo(() => {
-    if (isShiftPressed) {
-      return titleCase(suggestion);
+      process(query);
     } else {
-      return suggestion;
+      window.ipcRenderer.send("type", finalResult);
+      window.ipcRenderer.send("hide");
     }
-  }, [isShiftPressed, suggestion]);
+  }, [clipboardText, finalResult, process, query, updateContext]);
 
-  const suggestionWords = useMemo(() => {
-    return formattedSuggestion.split(" ");
-  }, [formattedSuggestion]);
+  const onChange = useCallback(
+    value => {
+      if (value.charAt(0) === ":") {
+        updateContext({ emojiMode: true });
+        changeHeight(EMOJI_HEIGHT);
+      } else {
+        updateContext({ emojiMode: false });
 
-  const finalResult = useMemo(() => {
-    if (selectedIndex === null) {
-      return formattedSuggestion;
+        if (value.length === 0) {
+          changeHeight(DEFAULT_HEIGHT);
+          updateContext({ suggestion: "" });
+        } else {
+          fetchGoogle(value);
+        }
+      }
+    },
+    [fetchGoogle, updateContext]
+  );
+
+  useEffect(() => {
+    if (suggestion.length) {
+      changeHeight(appRef.current.offsetHeight);
+    } else {
+      changeHeight(DEFAULT_HEIGHT);
     }
-    return suggestionWords[selectedIndex];
-  }, [formattedSuggestion, selectedIndex, suggestionWords]);
+  }, [suggestion]);
 
   useEffect(() => {
     window.ipcRenderer.on("clipboard-text", (e, text) => {
@@ -78,196 +90,21 @@ export default function() {
       }, 100);
     });
 
-    window.ipcRenderer.on("window-shown", () => {
-      input.current.focus();
-      changeHeight(DEFAULT_HEIGHT);
-    });
-
     window.ipcRenderer.on("window-hidden", () => {
       resetContext();
     });
   }, [resetContext, updateContext]);
 
-  const onExternalSelect = useCallback(
-    source => {
-      window.ipcRenderer.send("hide");
-      window.ipcRenderer.send("openExternal", {
-        value: finalResult,
-        source
-      });
-    },
-    [finalResult]
-  );
-
-  const onInputChange = useCallback(
-    async e => {
-      const { value } = e.target;
-
-      updateContext({ query: value });
-      if (value.charAt(0) === ":") {
-        updateContext({ emojiMode: true });
-        changeHeight(368);
-      } else {
-        updateContext({ emojiMode: false });
-
-        if (value.length === 0) {
-          changeHeight(DEFAULT_HEIGHT);
-          updateContext({ suggestion: "" });
-        } else {
-          const result = await fetchAutocomplete(value);
-
-          updateContext({
-            suggestion: result,
-            selectionCount: result.split(" ").length
-          });
-
-          changeHeight(appRef.current.offsetHeight);
-        }
-      }
-    },
-    [updateContext]
-  );
-
-  const onKeyUp = useCallback(
-    e => {
-      switch (e.key) {
-        case "Shift":
-          updateContext({ isShiftPressed: false });
-          break;
-        case "Alt":
-          updateContext({ isAltPressed: false });
-          break;
-        case "Meta":
-          updateContext({ isCommandPressed: false });
-          break;
-        default:
-          break;
-      }
-    },
-    [updateContext]
-  );
-
-  const onEnterPress = useCallback(async () => {
-    if (clipboardText && query.length === 0) {
-      updateContext({
-        isLoading: true,
-        query: clipboardText
-      });
-
-      const suggestion = await processClipboard(clipboardText);
-      // galapagos islands is a marvelous place
-      updateContext({ suggestion });
-
-      changeHeight(appRef.current.offsetHeight);
-    } else {
-      window.ipcRenderer.send("type", finalResult);
-      window.ipcRenderer.send("hide");
-    }
-  }, [clipboardText, finalResult, query.length, updateContext]);
-
-  const onEmojiSelect = useCallback(emoji => {
-    window.ipcRenderer.send("type", emoji);
-    window.ipcRenderer.send("hide");
-  }, []);
-
-  const onArrowLeft = useCallback(() => {
-    if (selectedIndex === null) {
-      updateContext({ selectedIndex: 0 });
-    } else if (selectedIndex > 0) {
-      updateContext({ selectedIndex: selectedIndex - 1 });
-    } else {
-      updateContext({ selectedIndex: selectionCount - 1 });
-    }
-  }, [selectedIndex, selectionCount, updateContext]);
-
-  const onArrowRight = useCallback(() => {
-    if (selectedIndex === null || selectedIndex < selectionCount - 1) {
-      updateContext({ selectedIndex: selectedIndex + 1 });
-    } else {
-      updateContext({ selectedIndex: 0 });
-    }
-  }, [selectedIndex, selectionCount, updateContext]);
-
-  const onKeyDown = useCallback(
-    e => {
-      if (emojiMode) return;
-      switch (e.key) {
-        case "Shift":
-          updateContext({ isShiftPressed: true });
-          break;
-        case "Meta":
-          updateContext({ isCommandPressed: true });
-          break;
-        case "Escape":
-          window.ipcRenderer.send("hide");
-          break;
-        case "Tab":
-          e.preventDefault();
-          onTabPress();
-          break;
-        case "Enter":
-          onEnterPress();
-          break;
-        case "ArrowRight":
-          if (isAltPressed) {
-            e.preventDefault();
-            onArrowRight();
-          }
-          break;
-        case "ArrowLeft":
-          if (isAltPressed) {
-            e.preventDefault();
-            onArrowLeft();
-          }
-          break;
-        case "Backspace":
-          if (query.length === 0) {
-            window.ipcRenderer.send("hide");
-          }
-          break;
-        case "1":
-          if (isCommandPressed) onExternalSelect("wikipedia.org");
-          break;
-        case "2":
-          if (isCommandPressed) onExternalSelect("dictionary.com");
-          break;
-        case "3":
-          if (isCommandPressed) onExternalSelect("thesaurus.com");
-          break;
-        case "4":
-          if (isCommandPressed) onExternalSelect("google.com");
-          break;
-        default:
-          break;
-      }
-    },
-    [
-      emojiMode,
-      isAltPressed,
-      isCommandPressed,
-      onArrowLeft,
-      onArrowRight,
-      onEnterPress,
-      onExternalSelect,
-      onTabPress,
-      query.length,
-      updateContext
-    ]
-  );
   return (
     <div className={`app ${colorTheme}`} ref={appRef}>
+      <EmojiPicker
+        search={query}
+        onSelect={onEmojiSelect}
+        visible={emojiMode}
+      />
       <header />
       <div className="input-wrapper">
-        <input
-          placeholder={"Start typing to see results"}
-          autoFocus
-          ref={input}
-          className="main-input"
-          value={query}
-          onChange={onInputChange}
-          onKeyDown={onKeyDown}
-          onKeyUp={onKeyUp}
-        />
+        <Input onEnterPress={onEnterPress} onChange={onChange} />
       </div>
       <div className="suggestion-wrapper" style={{ paddingBottom: "25px" }}>
         <div className="suggestion-body">
@@ -291,31 +128,7 @@ export default function() {
         </div>
         <footer>{clipboardText ? <i>Paste: {clipboardText}</i> : null}</footer>
       </div>
-      {/* <div
-        className={classnames("alt-options", {
-          active: isAltPressed && query.length
-        })}
-      >
-        {Object.keys(altOptions).map(alt => {
-          const { icon, key, label, address } = altOptions[alt];
-          return (
-            <div className="alt-option" key={alt}>
-              <div className="option-icon">
-                <img src={icon} alt={address} />
-              </div>
-              <span className="alt-option-key">{key}</span>
-              {label}
-              <i className="material-icons open-in-new">open_in_new</i>
-            </div>
-          );
-        })}
-      </div>
-       */}
-      <EmojiPicker
-        search={query}
-        onSelect={onEmojiSelect}
-        visible={emojiMode}
-      />
+      <MetaOptions />
     </div>
   );
 }

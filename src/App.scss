@@ -8,6 +8,7 @@
   display: none;
   visibility: hidden;
 }
+
 @font-face {
   font-family: emoji;
 
@@ -70,6 +71,11 @@ header {
   background: #68d391;
   height: 6px;
   width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 15;
 }
 
 .dark ::placeholder {
@@ -100,16 +106,22 @@ body {
   background: var(--bg);
 }
 
+.emoji-mart {
+  border: none;
+  z-index: 4;
+}
+
 .emoji-mart-scroll {
-  height: 85vh !important;
+  z-index: 4;
+  height: 228px !important;
 }
 
 .suggestion-wrapper {
   margin: 0;
   display: flex;
-  // flex-direction: column;
-  // align-items: center;
-  // justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   &.darken {
     filter: brightness(0);
   }
@@ -145,10 +157,25 @@ body {
 }
 
 .input-wrapper {
+  margin-top: 6px;
   height: 55px;
+  z-index: 30;
+  background: white;
   display: flex;
   align-items: stretch;
   justify-content: center;
+  position: relative;
+  &:before {
+    content: "⚡";
+    position: absolute;
+    left: 0;
+    top: 3px;
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding-left: 8px;
+    font-size: 25px;
+  }
 }
 
 .main-input {
@@ -159,9 +186,11 @@ body {
   width: 100%;
   font-size: 21px;
   padding: 2px 8px;
+  padding-left: 40px;
   outline: none;
   font-family: ProximaNova;
   background: var(--search);
+  position: relative;
 }
 
 .locked-char {
@@ -198,12 +227,13 @@ body {
 }
 
 .emoji-mart {
+  z-index: 10;
   position: absolute;
-  top: 100%;
   transition: all 0.2s ease;
-  transform: translateY(0);
+  bottom: 100%;
   &.active {
-    transform: translateY(-100%);
+    bottom: 0;
+    //   transform: translateY(100%);
   }
 }
 
@@ -263,7 +293,7 @@ body {
 .emoji-mart-category li.selected-emoji,
 .emoji-mart-category li:hover {
   background-color: #dfdfdf;
-  border-radius: 50%;
+  border-radius: 10px;
 }
 
 .emoji-mart-category .emoji-mart-emoji span {

@@ -9,6 +9,8 @@
     "electron-default-menu": "^1.0.1",
     "iohook": "^0.6.5",
     "menubar": "^7.1.0",
+    "react-virtualized": "^9.21.2",
+    "react-window": "^1.8.5",
     "robotjs": "^0.5.1"
   },
   "scripts": {
