@@ -43,11 +43,23 @@ function EmojiIcon({ style, isSelected, emoji, onMouseOver }) {
         "selected-emoji": isSelected
       })}
     >
-      <Emoji emoji={emoji} size={24} />
+      <Emoji emoji={emoji} size={24} native={true} />
     </li>
   );
 }
-
+function EmojiPreview({ emoji }) {
+  return (
+    <div className="emoji-preview">
+      <div className="emoji-mart-preview-emoji">
+        <Emoji emoji={emoji} size={38} native={true} />
+      </div>
+      <div className="emoji-mart-preview-data">
+        <div className="emoji-mart-preview-name">{emoji.name}</div>
+        <div className="emoji-mart-preview-shortname">{emoji.colons}</div>
+      </div>
+    </div>
+  );
+}
 const EmojiCell = React.memo(({ columnIndex, rowIndex, style }) => {
   const { selectedIndex, setSelectedIndex } = useContext(EmojiContext);
   const row = emojiGrid[rowIndex];
@@ -87,7 +99,11 @@ export default function({ search = "", visible }) {
     if (filtered.length) {
       return emojiIndex.emojis[filtered[selectedIndex]];
     }
-    return emojiIndex.emojis[allEmojies[selectedIndex]];
+
+    return (
+      emojiIndex.emojis[allEmojies[selectedIndex]][1] || // [1] selects the default skin-tone
+      emojiIndex.emojis[allEmojies[selectedIndex]]
+    );
   }, [filtered, selectedIndex]);
 
   const onKeyDown = useCallback(
@@ -214,17 +230,7 @@ export default function({ search = "", visible }) {
           </div>
         </div>
       </div>
-      <div className="emoji-preview">
-        <div className="emoji-mart-preview-emoji">
-          <Emoji emoji={selectedEmoji} size={38} />
-        </div>
-        <div className="emoji-mart-preview-data">
-          <div className="emoji-mart-preview-name">{selectedEmoji.name}</div>
-          <div className="emoji-mart-preview-shortname">
-            {selectedEmoji.colons}
-          </div>
-        </div>
-      </div>
+      {selectedEmoji && <EmojiPreview emoji={selectedEmoji} />}
     </div>
   );
 }
