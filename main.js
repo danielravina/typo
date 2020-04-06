@@ -89,6 +89,7 @@ function createWindow() {
   win.on("blur", () => {
     if (output) {
       robot.typeString(output);
+      clipboard.writeText(output);
       output = null;
     }
     if (!isDev) {
