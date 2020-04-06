@@ -10,6 +10,7 @@ export default function() {
   const [query, setQuery] = useState("");
 
   const fetch = useCallback(async () => {
+    if (query.length < 2) return;
     const response = await fetchJsonp(SUGGESTIONS_URL + query);
 
     const responseJson = await response.json();
@@ -21,7 +22,7 @@ export default function() {
       });
     } else {
       updateContext({
-        suggestion: "🙈 Nothing found 🙉",
+        suggestion: "",
         selectionCount: null
       });
     }

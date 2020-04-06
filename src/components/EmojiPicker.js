@@ -1,31 +1,36 @@
 import React, { useMemo, useContext, useCallback, useEffect } from "react";
+import { FixedSizeGrid as Grid } from "react-window";
 import "emoji-mart/css/emoji-mart.css";
 import { emojiIndex, Emoji } from "emoji-mart";
 import { categories } from "emoji-mart/data/apple.json";
 import classnames from "classnames";
 import EmojiContext from "../context/EmojiContext";
+import arrayChunk from "array-chunk";
+import randomcolor from "randomcolor";
+import { EMOJI_HEIGHT } from "../lib/constants";
+const allEmojies = categories.reduce((arr, category) => {
+  return [...arr, ...category.emojis];
+}, []);
 
-const Category = React.memo(({ name, emojis }) => {
+const emojiGrid = arrayChunk(allEmojies, 10);
+
+const EmojiListItem = React.memo(({ columnIndex, rowIndex, style }) => {
+  const { selectedIndex } = useContext(EmojiContext);
+  const emoji = emojiGrid[rowIndex][columnIndex];
+  if (!emoji) return;
   return (
-    <div className={"emoji-mart-category"} key={name}>
-      <div className="emoji-mart-category-list">
-        {emojis.map((emoji, i) => (
-          <li
-            className={classnames({
-              "selected-emoji": i === selectedIndex
-            })}
-            key={emoji}
-          >
-            {console.log(name)}
-            <Emoji emoji={emoji} size={24} native={true} />
-          </li>
-        ))}
-      </div>
-    </div>
+    <li
+      style={style}
+      className={classnames({
+        "selected-emoji": allEmojies.indexOf(emoji) === selectedIndex
+      })}
+    >
+      <Emoji emoji={emoji} size={24} />
+    </li>
   );
 });
 
-export default function({ search = "", visible, onSelect }) {
+export default React.memo(({ search = "", visible, onSelect }) => {
   const { selectedIndex, setSelectedIndex } = useContext(EmojiContext);
 
   const filtered = useMemo(() => {
@@ -89,19 +94,10 @@ export default function({ search = "", visible, onSelect }) {
     };
   }, [onKeyDown]);
 
-  const all = useMemo(() => {
-    return categories.map(({ name, emojis }) => {
-      return <Category name={name} emojis={emojis} />;
-    });
-  }, []);
-
   const searchResults = useMemo(() => {
     if (search.length > 1) {
       return (
         <div className="emoji-mart-category">
-          <div className="emoji-mart-category-label">
-            <span>Search Reslts</span>
-          </div>
           <div className="emoji-mart-category-list">
             {filtered.length ? (
               filtered.map((emoji, i) => (
@@ -115,13 +111,28 @@ export default function({ search = "", visible, onSelect }) {
                 </li>
               ))
             ) : (
-              <span style={{ color: "#acacac", padding: 5 }}>No Results</span>
+              <div style={{ color: "#acacac", padding: 15 }}>No Results</div>
             )}
           </div>
         </div>
       );
     }
   }, [filtered, search.length, selectedIndex]);
+
+  const grid = useMemo(() => {
+    return (
+      <Grid
+        columnCount={10}
+        columnWidth={36}
+        height={EMOJI_HEIGHT}
+        rowCount={emojiGrid.length}
+        rowHeight={35}
+        width={370}
+      >
+        {EmojiListItem}
+      </Grid>
+    );
+  }, []);
 
   return (
     <div
@@ -131,8 +142,12 @@ export default function({ search = "", visible, onSelect }) {
     >
       <div className="emoji-mart-scroll">
         {searchResults}
-        <div className={classnames({ hidden: search.length > 1 })}>{all}</div>
+        <div className={classnames({ hidden: search.length > 1 })}>
+          <div className="emoji-mart-category">
+            <div className="emoji-mart-category-list">{grid}</div>
+          </div>
+        </div>
       </div>
     </div>
   );
-}
+});

@@ -1,6 +1,6 @@
 import "./App.scss";
 
-import React, { useRef, useCallback, useEffect } from "react";
+import React, { useRef, useCallback, useEffect, useMemo } from "react";
 
 import "emoji-mart/css/emoji-mart.css";
 import classnames from "classnames";
@@ -95,6 +95,22 @@ export default function() {
     });
   }, [resetContext, updateContext]);
 
+  const suggestionBody = useMemo(() => {
+    return suggestionWords.map((word, i) => (
+      <React.Fragment key={word + i}>
+        <span
+          className={classnames("word", {
+            selected: query.length && i === selectedIndex,
+            corrected: corrections.has(strip(word))
+          })}
+        >
+          {word}
+        </span>
+        {i === suggestionWords.length - 1 ? null : <span className="spacer" />}
+      </React.Fragment>
+    ));
+  }, [corrections, query.length, selectedIndex, suggestionWords]);
+
   return (
     <div className={`app ${colorTheme}`} ref={appRef}>
       <EmojiPicker
@@ -109,21 +125,7 @@ export default function() {
       <div className="suggestion-wrapper" style={{ paddingBottom: "25px" }}>
         <div className="suggestion-body">
           <span className="suggestion-text animated fadeIn">
-            {suggestionWords.map((w, i) => (
-              <React.Fragment key={w + i}>
-                <span
-                  className={classnames("word", {
-                    selected: query.length && i === selectedIndex,
-                    corrected: corrections.has(strip(w))
-                  })}
-                >
-                  {w}
-                </span>
-                {i === suggestionWords.length - 1 ? null : (
-                  <span className="spacer" />
-                )}
-              </React.Fragment>
-            ))}
+            {suggestionBody}
           </span>
         </div>
         <footer>{clipboardText ? <i>Paste: {clipboardText}</i> : null}</footer>

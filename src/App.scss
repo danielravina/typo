@@ -113,7 +113,11 @@ body {
 
 .emoji-mart-scroll {
   z-index: 4;
-  height: 228px !important;
+  height: 258px !important;
+}
+
+.emoji-mart-category-list {
+  overflow: hidden;
 }
 
 .suggestion-wrapper {
