@@ -6,7 +6,6 @@ function EmojiProvider({ children }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const onSelect = useCallback(emoji => {
-    console.log(emoji);
     window.ipcRenderer.send("type", emoji);
     window.ipcRenderer.send("hide");
     setTimeout(() => {

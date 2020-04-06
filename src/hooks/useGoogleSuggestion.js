@@ -1,36 +1,21 @@
-import { useState, updateContext, useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import fetchJsonp from "fetch-jsonp";
-import useAppContext from "./useAppContext";
 
 const SUGGESTIONS_URL =
   "https://suggestqueries.google.com/complete/search?client=firefox&q=";
 
 export default function() {
-  const { updateContext } = useAppContext();
-  const [query, setQuery] = useState("");
-
-  const fetch = useCallback(async () => {
-    if (query.length < 2) return;
+  const fetch = useCallback(async query => {
+    if (query.length < 2) return "";
     const response = await fetchJsonp(SUGGESTIONS_URL + query);
 
     const responseJson = await response.json();
     const result = responseJson[1][0] || "";
     if (result.length) {
-      updateContext({
-        suggestion: result,
-        selectionCount: result.split(" ").length
-      });
-    } else {
-      updateContext({
-        suggestion: "",
-        selectionCount: null
-      });
+      return result;
     }
-  }, [query, updateContext]);
+    return "";
+  }, []);
 
-  useEffect(() => {
-    fetch();
-  }, [fetch]);
-
-  return setQuery;
+  return fetch;
 }

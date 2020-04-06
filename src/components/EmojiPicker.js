@@ -10,7 +10,7 @@ import "emoji-mart/css/emoji-mart.css";
 import { emojiIndex, Emoji } from "emoji-mart";
 import { categories } from "emoji-mart/data/apple.json";
 import classnames from "classnames";
-import EmojiContext from "../context/EmojiContext";
+import useEmojiContext from "../hooks/useEmojiContext";
 import arrayChunk from "array-chunk";
 import randomcolor from "randomcolor";
 import { EMOJI_HEIGHT } from "../lib/constants";
@@ -27,7 +27,7 @@ const colors = allEmojies.map(() =>
 );
 
 function EmojiIcon({ style, isSelected, emoji, onMouseOver }) {
-  const { onSelect, selectedIndex } = useContext(EmojiContext);
+  const { onSelect, selectedIndex } = useEmojiContext();
   return (
     <li
       style={{
@@ -61,7 +61,7 @@ function EmojiPreview({ emoji }) {
   );
 }
 const EmojiCell = React.memo(({ columnIndex, rowIndex, style }) => {
-  const { selectedIndex, setSelectedIndex } = useContext(EmojiContext);
+  const { selectedIndex, setSelectedIndex } = useEmojiContext();
   const row = emojiGrid[rowIndex];
 
   if (!row) return <div className="last-row" />;
@@ -83,9 +83,7 @@ const EmojiCell = React.memo(({ columnIndex, rowIndex, style }) => {
 });
 
 export default function({ search = "", visible }) {
-  const { selectedIndex, setSelectedIndex, onSelect } = useContext(
-    EmojiContext
-  );
+  const { selectedIndex, setSelectedIndex, onSelect } = useEmojiContext();
 
   const gridRef = useRef();
 
@@ -178,10 +176,6 @@ export default function({ search = "", visible }) {
               <div style={{ color: "#acacac", padding: 15 }}>No Results</div>
             )}
           </div>
-          <br />
-          <br />
-          <br />
-          <br />
         </div>
       );
     }

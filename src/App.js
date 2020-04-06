@@ -14,12 +14,13 @@ import useGoogleSuggestion from "./hooks/useGoogleSuggestion";
 import Mark from "./components/Mark";
 import Input from "./components/Input";
 import MetaOptions from "./components/MetaOptions";
+import useEmojiContext from "./hooks/useEmojiContext";
 
 export default function() {
   const appRef = useRef(null);
-  const { process } = useClipboard();
+  const processClipboard = useClipboard();
   const fetchGoogle = useGoogleSuggestion();
-
+  const { setSelectedIndex } = useEmojiContext();
   const {
     query,
     suggestion,
@@ -40,15 +41,21 @@ export default function() {
         isLoading: true
       });
 
-      process(query);
+      processClipboard(clipboardText);
     } else {
       window.ipcRenderer.send("type", finalResult);
       window.ipcRenderer.send("hide");
     }
-  }, [clipboardText, finalResult, process, query, updateContext]);
+  }, [
+    clipboardText,
+    finalResult,
+    processClipboard,
+    query.length,
+    updateContext
+  ]);
 
   const onChange = useCallback(
-    value => {
+    async value => {
       if (value.charAt(0) === ":") {
         updateContext({ emojiMode: true });
         changeHeight(EMOJI_HEIGHT);
@@ -59,7 +66,12 @@ export default function() {
           changeHeight(DEFAULT_HEIGHT);
           updateContext({ suggestion: "" });
         } else {
-          fetchGoogle(value);
+          const googleResult = await fetchGoogle(value);
+
+          updateContext({
+            suggestion: googleResult,
+            selectionCount: googleResult.split(" ").length
+          });
         }
       }
     },
@@ -77,6 +89,7 @@ export default function() {
   useEffect(() => {
     window.ipcRenderer.on("clipboard-text", (e, text) => {
       if (!text.length) return;
+
       setTimeout(() => {
         changeHeight(DEFAULT_HEIGHT + 25);
         updateContext({ clipboardText: text });
@@ -85,8 +98,9 @@ export default function() {
 
     window.ipcRenderer.on("window-hidden", () => {
       resetContext();
+      setSelectedIndex(0);
     });
-  }, [resetContext, updateContext]);
+  }, [clipboardText, resetContext, setSelectedIndex, updateContext]);
 
   const suggestionBody = useMemo(() => {
     return suggestionWords.map((word, i) => (
