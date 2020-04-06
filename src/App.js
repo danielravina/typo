@@ -16,7 +16,7 @@ import Input from "./components/Input";
 import MetaOptions from "./components/MetaOptions";
 import useEmojiContext from "./hooks/useEmojiContext";
 
-export default function() {
+export default function () {
   const appRef = useRef(null);
   const processClipboard = useClipboard();
   const fetchGoogle = useGoogleSuggestion();
@@ -32,16 +32,16 @@ export default function() {
     clipboardText,
     corrections,
     suggestionWords,
-    finalResult
+    finalResult,
   } = useAppContext();
 
   const onEnterPress = useCallback(async () => {
     if (clipboardText && query.length === 0) {
       updateContext({
-        isLoading: true
+        isLoading: true,
       });
 
-      processClipboard(clipboardText);
+      processClipboard(clipboardText.trim());
     } else {
       window.ipcRenderer.send("type", finalResult);
       window.ipcRenderer.send("hide");
@@ -51,11 +51,11 @@ export default function() {
     finalResult,
     processClipboard,
     query.length,
-    updateContext
+    updateContext,
   ]);
 
   const onChange = useCallback(
-    async value => {
+    async (value) => {
       if (value.charAt(0) === ":") {
         updateContext({ emojiMode: true });
         changeHeight(EMOJI_HEIGHT);
@@ -70,7 +70,7 @@ export default function() {
 
           updateContext({
             suggestion: googleResult,
-            selectionCount: googleResult.split(" ").length
+            selectionCount: googleResult.split(" ").length,
           });
         }
       }
@@ -108,7 +108,7 @@ export default function() {
         <span
           className={classnames("word", {
             selected: query.length && i === selectedIndex,
-            corrected: corrections.has(strip(word))
+            corrected: corrections.has(strip(word)),
           })}
         >
           {word}

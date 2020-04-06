@@ -8,7 +8,7 @@ const {
   app,
   BrowserWindow,
   Tray,
-  systemPreferences
+  systemPreferences,
 } = electron;
 const clipboard = require("electron-clipboard-extended");
 const { version } = require("./package.json");
@@ -74,17 +74,21 @@ function createWindow() {
     height: DEFAULT_HEIGHT,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
-      nodeIntegration: false
+      nodeIntegration: false,
     },
     resizable: true,
     maximizable: false,
     transparent: true,
     frame: false,
     show: true,
-    center: true
+    center: true,
   });
 
-  win.loadURL("http://127.0.0.1:9000");
+  if (isDev) {
+    win.loadURL("http://127.0.0.1:9000");
+  } else {
+    win.loadURL("https://d3pc5r88536fha.cloudfront.net");
+  }
 
   win.on("blur", () => {
     if (output) {
@@ -93,7 +97,7 @@ function createWindow() {
       output = null;
     }
     if (!isDev) {
-      hideWindow();
+      // hideWindow();
     }
   });
 
@@ -134,7 +138,7 @@ function createWindow() {
       let currentText = clipboard.readText();
       clip = {
         text: currentText,
-        ts: Date.now()
+        ts: Date.now(),
       };
     })
     .startWatching();

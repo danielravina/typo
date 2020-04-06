@@ -25,7 +25,8 @@ const ignore = [
 
 if (OS === "darwin") {
   executableName = "EXE";
-  icon = path.join(__dirname, "..", "..", "src", "icons", "headset.icns");
+  // icon = path.join(__dirname, "..", "..", "src", "icons", "headset.icns");
+  icon = null;
   arch = "x64";
 }
 
