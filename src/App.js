@@ -25,8 +25,6 @@ export default function() {
     suggestion,
     selectedIndex,
     colorTheme,
-    chosenEmoji,
-    selectionCount,
     emojiMode,
     updateContext,
     resetContext,
@@ -35,11 +33,6 @@ export default function() {
     suggestionWords,
     finalResult
   } = useAppContext();
-
-  const onEmojiSelect = useCallback(emoji => {
-    window.ipcRenderer.send("type", emoji);
-    window.ipcRenderer.send("hide");
-  }, []);
 
   const onEnterPress = useCallback(async () => {
     if (clipboardText && query.length === 0) {
@@ -113,11 +106,7 @@ export default function() {
 
   return (
     <div className={`app ${colorTheme}`} ref={appRef}>
-      <EmojiPicker
-        search={query}
-        onSelect={onEmojiSelect}
-        visible={emojiMode}
-      />
+      <EmojiPicker search={query} visible={emojiMode} />
       <header />
       <div className="input-wrapper">
         <Input onEnterPress={onEnterPress} onChange={onChange} />

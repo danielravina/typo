@@ -17,7 +17,7 @@ const robot = require("robotjs");
 const axios = require("axios");
 
 const isDev = process.env.NODE_ENV === "development";
-const DEFAULT_WIDTH = 374;
+const DEFAULT_WIDTH = 339;
 const DEFAULT_HEIGHT = 61;
 let output = null;
 let win;
