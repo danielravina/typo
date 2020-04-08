@@ -3,7 +3,7 @@ import React, {
   useContext,
   useCallback,
   useEffect,
-  useRef
+  useRef,
 } from "react";
 import { FixedSizeGrid as Grid } from "react-window";
 import "emoji-mart/css/emoji-mart.css";
@@ -32,7 +32,7 @@ function EmojiIcon({ style, isSelected, emoji, onMouseOver }) {
     <li
       style={{
         ...style,
-        backgroundColor: isSelected ? colors[selectedIndex] : null
+        backgroundColor: isSelected ? colors[selectedIndex] : null,
       }}
       onClick={() => {
         const selected = emojiIndex.emojis[emoji];
@@ -40,7 +40,7 @@ function EmojiIcon({ style, isSelected, emoji, onMouseOver }) {
       }}
       onMouseOver={onMouseOver}
       className={classnames({
-        "selected-emoji": isSelected
+        "selected-emoji": isSelected,
       })}
     >
       <Emoji emoji={emoji} size={24} native={true} />
@@ -82,7 +82,7 @@ const EmojiCell = React.memo(({ columnIndex, rowIndex, style }) => {
   );
 });
 
-export default function({ search = "", visible }) {
+export default function ({ search = "", visible }) {
   const { selectedIndex, setSelectedIndex, onSelect } = useEmojiContext();
 
   const gridRef = useRef();
@@ -90,22 +90,24 @@ export default function({ search = "", visible }) {
   const filtered = useMemo(() => {
     if (search.length < 2) return [];
 
-    return emojiIndex.search(search.replace(":", "")).map(o => o.id);
+    return emojiIndex.search(search.replace(":", "")).map((o) => o.id);
   }, [search]);
 
   const selectedEmoji = useMemo(() => {
+    let emojiName;
     if (filtered.length) {
-      return emojiIndex.emojis[filtered[selectedIndex]];
+      emojiName = filtered[selectedIndex];
+    } else {
+      emojiName = allEmojies[selectedIndex];
     }
 
     return (
-      emojiIndex.emojis[allEmojies[selectedIndex]][1] || // [1] selects the default skin-tone
-      emojiIndex.emojis[allEmojies[selectedIndex]]
+      emojiIndex.emojis[emojiName][1] || emojiIndex.emojis[emojiName] // [1] selects the default skin-tone
     );
   }, [filtered, selectedIndex]);
 
   const onKeyDown = useCallback(
-    e => {
+    (e) => {
       if (!visible) return;
       const total = filtered.length || allEmojies.length;
       switch (e.key) {
@@ -155,7 +157,7 @@ export default function({ search = "", visible }) {
       selectedEmoji,
       selectedIndex,
       setSelectedIndex,
-      visible
+      visible,
     ]
   );
 
@@ -213,7 +215,7 @@ export default function({ search = "", visible }) {
   return (
     <div
       className={classnames("emoji-mart", {
-        active: visible
+        active: visible,
       })}
     >
       <div className="emoji-mart-scroll">
