@@ -41,10 +41,9 @@ const EmojiCell = React.memo(({ columnIndex, rowIndex, style }) => {
   const emoji = row[columnIndex];
 
   if (!emoji) return null;
+  const source = filteredQueryResult.length ? filteredQueryResult : allEmojies;
 
-  const isSelected = filteredQueryResult.length
-    ? filteredQueryResult.indexOf(emoji) === selectedIndex
-    : allEmojies.indexOf(emoji) === selectedIndex;
+  const isSelected = source.indexOf(emoji) === selectedIndex;
 
   return (
     <li
@@ -56,7 +55,7 @@ const EmojiCell = React.memo(({ columnIndex, rowIndex, style }) => {
         const selected = emojiIndex.emojis[emoji];
         onSelect(selected.native);
       }}
-      onMouseOver={() => setSelectedIndex(allEmojies.indexOf(emoji))}
+      onMouseOver={() => setSelectedIndex(source.indexOf(emoji))}
       className={classnames({
         "selected-emoji": isSelected,
       })}
@@ -85,6 +84,7 @@ export default function () {
     let emojiName;
     if (filteredQueryResult.length) {
       emojiName = filteredQueryResult[selectedIndex];
+      console.log(emojiName);
     } else {
       emojiName = allEmojies[selectedIndex];
     }

@@ -11,7 +11,7 @@ const {
   systemPreferences,
 } = electron;
 const clipboard = require("electron-clipboard-extended");
-const { version } = require("./package.json");
+// const { version } = require("./package.json");
 const path = require("path");
 const robot = require("robotjs");
 const axios = require("axios");
@@ -117,7 +117,7 @@ function createWindow() {
       `https://www.google.com/search?q=site%3A${source}+${value}&sourceid=chrome&ie=UTF-8`
     );
 
-    const match = data.match(/url\?q=([a-zA-z:\/\.-]*)/);
+    const match = data.match(/url\?q=([a-zA-z:/.-]*)/);
     const link = match[1];
 
     shell.openExternal(link);

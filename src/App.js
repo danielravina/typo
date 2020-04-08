@@ -11,9 +11,8 @@ import { DEFAULT_HEIGHT, EMOJI_HEIGHT } from "./lib/constants";
 import useClipboard from "./hooks/useClipboard";
 import useAppContext from "./hooks/useAppContext";
 import useGoogleSuggestion from "./hooks/useGoogleSuggestion";
-import Mark from "./components/Mark";
+// import Mark from "./components/Mark";
 import Input from "./components/Input";
-import MetaOptions from "./components/MetaOptions";
 import useEmojiContext from "./hooks/useEmojiContext";
 
 export default function () {
@@ -26,7 +25,6 @@ export default function () {
     suggestion,
     selectedIndex,
     colorTheme,
-    emojiMode,
     updateContext,
     resetContext,
     clipboardText,
