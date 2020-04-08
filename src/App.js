@@ -14,6 +14,7 @@ import useGoogleSuggestion from "./hooks/useGoogleSuggestion";
 // import Mark from "./components/Mark";
 import Input from "./components/Input";
 import useEmojiContext from "./hooks/useEmojiContext";
+import SlashMenu from "./components/SlashMenu";
 
 export default function () {
   const appRef = useRef(null);
@@ -86,8 +87,10 @@ export default function () {
   );
 
   useEffect(() => {
-    if (suggestion.length) {
-      changeHeight(appRef.current.offsetHeight);
+    if (suggestion.length > 2) {
+      setTimeout(() => {
+        changeHeight(appRef.current.offsetHeight);
+      }, 100);
     } else {
       changeHeight(DEFAULT_HEIGHT);
     }
@@ -128,19 +131,15 @@ export default function () {
   return (
     <div className={`app ${colorTheme}`} ref={appRef}>
       <EmojiPicker />
-      {/* <MetaOptions /> */}
-      <header />
+      <SlashMenu />
       <div className="input-wrapper">
+        <header />
         <Input onEnterPress={onEnterPress} onChange={onChange} />
       </div>
-      <div className="suggestion-wrapper" style={{ paddingBottom: "25px" }}>
-        <div className="suggestion-body">
-          <span className="suggestion-text animated fadeIn">
-            {suggestionBody}
-          </span>
-        </div>
-        <footer>{clipboardText ? <i>Paste: {clipboardText}</i> : null}</footer>
+      <div className="suggestion-wrapper">
+        <span className="suggestion-text">{suggestionBody}</span>
       </div>
+      <footer>{clipboardText ? <i>Paste: {clipboardText}</i> : null}</footer>
     </div>
   );
 }

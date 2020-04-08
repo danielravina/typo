@@ -17,7 +17,7 @@ const robot = require("robotjs");
 const axios = require("axios");
 
 const isDev = process.env.NODE_ENV === "development";
-const DEFAULT_WIDTH = 339;
+const DEFAULT_WIDTH = 377;
 const DEFAULT_HEIGHT = 61;
 let output = null;
 let win;
@@ -93,11 +93,10 @@ function createWindow() {
   win.on("blur", () => {
     if (output) {
       robot.typeString(output);
-      clipboard.writeText(output);
       output = null;
     }
     if (!isDev) {
-      // hideWindow();
+      hideWindow();
     }
   });
 
@@ -145,7 +144,6 @@ function createWindow() {
 }
 
 // my favourite movie is avengers endgame
-
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });

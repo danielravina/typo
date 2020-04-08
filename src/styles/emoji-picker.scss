@@ -1,0 +1,54 @@
+.emoji-mart {
+  z-index: 10;
+  position: absolute;
+  transition: transform 0.2s ease;
+  // fix this
+
+  transform: translateY(-100%);
+  bottom: 100%;
+  &.active {
+    bottom: 0;
+    transform: translateY(0);
+  }
+}
+.emoji-preview {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 55px;
+  background: white;
+  border-top: 1px solid #d9d9d9;
+}
+
+.emoji-mart {
+  width: 100%;
+}
+
+.emoji-mart-preview-name {
+  font-size: 14px;
+}
+
+.emoji-mart-preview-shortname {
+  font-size: 12px;
+  color: #888;
+}
+.emoji-mart-category li {
+  transition: background 0.125s ease;
+  border-radius: 10px;
+}
+
+.emoji-mart-category li.selected-emoji,
+.emoji-mart-category li:hover {
+  background-color: #dfdfdf;
+}
+
+.emoji-mart-category .emoji-mart-emoji span {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+.emoji-mart-category .emoji-mart-emoji:hover:before {
+  display: none;
+}

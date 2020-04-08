@@ -1,0 +1,12 @@
+.slash-menu {
+  position: absolute;
+  width: 100%;
+  background: pink;
+  bottom: 0;
+  top: 61px;
+  transform: translateY(-100%);
+  transition: all 0.2s ease;
+  &.active {
+    transform: translateY(0);
+  }
+}

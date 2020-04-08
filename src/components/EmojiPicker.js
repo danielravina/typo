@@ -4,7 +4,7 @@ import "emoji-mart/css/emoji-mart.css";
 import { emojiIndex, Emoji } from "emoji-mart";
 import classnames from "classnames";
 import useEmojiContext from "../hooks/useEmojiContext";
-
+import "../styles/emoji-picker.scss";
 import { EMOJI_HEIGHT } from "../lib/constants";
 import useAppContext from "../hooks/useAppContext";
 
@@ -84,10 +84,11 @@ export default function () {
     let emojiName;
     if (filteredQueryResult.length) {
       emojiName = filteredQueryResult[selectedIndex];
-      console.log(emojiName);
     } else {
       emojiName = allEmojies[selectedIndex];
     }
+
+    if (!emojiName) return null;
 
     return (
       emojiIndex.emojis[emojiName][1] || emojiIndex.emojis[emojiName] // [1] selects the default skin-tone if exists
@@ -161,7 +162,7 @@ export default function () {
         columnWidth={36}
         rowHeight={35}
         height={EMOJI_HEIGHT}
-        width={339}
+        width={377}
       >
         {EmojiCell}
       </Grid>
