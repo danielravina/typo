@@ -113,7 +113,7 @@ body {
 
 .emoji-mart-scroll {
   z-index: 4;
-  // overflow-y: hidden !important;
+  overflow-y: hidden !important;
   height: 258px !important;
 }
 
@@ -234,7 +234,8 @@ body {
 .emoji-mart {
   z-index: 10;
   position: absolute;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
+  // fix this
   bottom: 100%;
   &.active {
     bottom: 0;

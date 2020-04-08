@@ -1,52 +1,13 @@
-import React, {
-  useMemo,
-  useContext,
-  useCallback,
-  useEffect,
-  useRef,
-} from "react";
+import React, { useMemo, useCallback, useEffect, useRef } from "react";
 import { FixedSizeGrid as Grid } from "react-window";
 import "emoji-mart/css/emoji-mart.css";
 import { emojiIndex, Emoji } from "emoji-mart";
-import { categories } from "emoji-mart/data/apple.json";
 import classnames from "classnames";
 import useEmojiContext from "../hooks/useEmojiContext";
-import arrayChunk from "array-chunk";
-import randomcolor from "randomcolor";
+
 import { EMOJI_HEIGHT } from "../lib/constants";
+import useAppContext from "../hooks/useAppContext";
 
-const allEmojies = categories.reduce((arr, category) => {
-  return [...arr, ...category.emojis];
-}, []);
-
-const COLUMNS = 9;
-const emojiGrid = arrayChunk(allEmojies, COLUMNS);
-
-const colors = allEmojies.map(() =>
-  randomcolor({ format: "rgba", alpha: 0.5, luminosity: "dark" })
-);
-
-function EmojiIcon({ style, isSelected, emoji, onMouseOver }) {
-  const { onSelect, selectedIndex } = useEmojiContext();
-  return (
-    <li
-      style={{
-        ...style,
-        backgroundColor: isSelected ? colors[selectedIndex] : null,
-      }}
-      onClick={() => {
-        const selected = emojiIndex.emojis[emoji];
-        onSelect(selected.native);
-      }}
-      onMouseOver={onMouseOver}
-      className={classnames({
-        "selected-emoji": isSelected,
-      })}
-    >
-      <Emoji emoji={emoji} size={24} native={true} />
-    </li>
-  );
-}
 function EmojiPreview({ emoji }) {
   return (
     <div className="emoji-preview">
@@ -60,68 +21,95 @@ function EmojiPreview({ emoji }) {
     </div>
   );
 }
+
 const EmojiCell = React.memo(({ columnIndex, rowIndex, style }) => {
-  const { selectedIndex, setSelectedIndex } = useEmojiContext();
-  const row = emojiGrid[rowIndex];
+  const {
+    selectedIndex,
+    setSelectedIndex,
+    filteredGrid,
+    fullGrid,
+    allEmojies,
+    onSelect,
+    colors,
+    filteredQueryResult,
+  } = useEmojiContext();
+
+  const row = filteredGrid.length ? filteredGrid[rowIndex] : fullGrid[rowIndex];
 
   if (!row) return <div className="last-row" />;
 
   const emoji = row[columnIndex];
 
-  if (!emoji) return;
+  if (!emoji) return null;
 
-  const isSelected = allEmojies.indexOf(emoji) === selectedIndex;
+  const isSelected = filteredQueryResult.length
+    ? filteredQueryResult.indexOf(emoji) === selectedIndex
+    : allEmojies.indexOf(emoji) === selectedIndex;
 
   return (
-    <EmojiIcon
-      style={style}
-      isSelected={isSelected}
-      emoji={emoji}
+    <li
+      style={{
+        ...style,
+        backgroundColor: isSelected ? colors[selectedIndex] : null,
+      }}
+      onClick={() => {
+        const selected = emojiIndex.emojis[emoji];
+        onSelect(selected.native);
+      }}
       onMouseOver={() => setSelectedIndex(allEmojies.indexOf(emoji))}
-    />
+      className={classnames({
+        "selected-emoji": isSelected,
+      })}
+    >
+      <Emoji emoji={emoji} size={24} native={true} />
+    </li>
   );
 });
 
-export default function ({ search = "", visible }) {
-  const { selectedIndex, setSelectedIndex, onSelect } = useEmojiContext();
-
+export default function () {
+  const {
+    selectedIndex,
+    setSelectedIndex,
+    onSelect,
+    GRID_COLUMNS,
+    fullGrid,
+    filteredGrid,
+    filteredQueryResult,
+    allEmojies,
+  } = useEmojiContext();
+  const { query } = useAppContext();
+  const { emojiMode } = useAppContext();
   const gridRef = useRef();
-
-  const filtered = useMemo(() => {
-    if (search.length < 2) return [];
-
-    return emojiIndex.search(search.replace(":", "")).map((o) => o.id);
-  }, [search]);
 
   const selectedEmoji = useMemo(() => {
     let emojiName;
-    if (filtered.length) {
-      emojiName = filtered[selectedIndex];
+    if (filteredQueryResult.length) {
+      emojiName = filteredQueryResult[selectedIndex];
     } else {
       emojiName = allEmojies[selectedIndex];
     }
 
     return (
-      emojiIndex.emojis[emojiName][1] || emojiIndex.emojis[emojiName] // [1] selects the default skin-tone
+      emojiIndex.emojis[emojiName][1] || emojiIndex.emojis[emojiName] // [1] selects the default skin-tone if exists
     );
-  }, [filtered, selectedIndex]);
+  }, [allEmojies, filteredQueryResult, selectedIndex]);
 
   const onKeyDown = useCallback(
     (e) => {
-      if (!visible) return;
-      const total = filtered.length || allEmojies.length;
+      if (!emojiMode) return;
+      const total = filteredQueryResult.length || allEmojies.length;
       switch (e.key) {
         case "ArrowDown": {
           e.preventDefault();
-          if (selectedIndex + COLUMNS <= total - 1) {
-            setSelectedIndex(selectedIndex + COLUMNS);
+          if (selectedIndex + GRID_COLUMNS <= total - 1) {
+            setSelectedIndex(selectedIndex + GRID_COLUMNS);
           }
           break;
         }
         case "ArrowUp": {
           e.preventDefault();
-          if (selectedIndex - COLUMNS >= 0) {
-            setSelectedIndex(selectedIndex - COLUMNS);
+          if (selectedIndex - GRID_COLUMNS >= 0) {
+            setSelectedIndex(selectedIndex - GRID_COLUMNS);
           }
           break;
         }
@@ -152,52 +140,33 @@ export default function ({ search = "", visible }) {
       }
     },
     [
-      filtered.length,
+      GRID_COLUMNS,
+      allEmojies.length,
+      emojiMode,
+      filteredQueryResult.length,
       onSelect,
       selectedEmoji,
       selectedIndex,
       setSelectedIndex,
-      visible,
     ]
   );
 
-  const searchResults = useMemo(() => {
-    if (search.length > 1) {
-      return (
-        <div className="emoji-mart-category">
-          <div className="emoji-mart-category-list">
-            {filtered.length ? (
-              filtered.map((emoji, i) => (
-                <EmojiIcon
-                  isSelected={i === selectedIndex}
-                  emoji={emoji}
-                  onMouseOver={() => setSelectedIndex(i)}
-                />
-              ))
-            ) : (
-              <div style={{ color: "#acacac", padding: 15 }}>No Results</div>
-            )}
-          </div>
-        </div>
-      );
-    }
-  }, [filtered, search.length, selectedIndex, setSelectedIndex]);
-
   const grid = useMemo(() => {
+    const rowCount = filteredGrid.length || fullGrid.length;
     return (
       <Grid
         ref={gridRef}
-        columnCount={COLUMNS}
+        columnCount={GRID_COLUMNS}
+        rowCount={rowCount + 4} // 4 to give space at the bottom
         columnWidth={36}
-        height={EMOJI_HEIGHT}
-        rowCount={emojiGrid.length + 4} // 4 to give space at the bottom
         rowHeight={35}
+        height={EMOJI_HEIGHT}
         width={339}
       >
         {EmojiCell}
       </Grid>
     );
-  }, []);
+  }, [GRID_COLUMNS, filteredGrid.length, fullGrid.length]);
 
   useEffect(() => {
     document.addEventListener("keydown", onKeyDown);
@@ -207,23 +176,20 @@ export default function ({ search = "", visible }) {
   }, [onKeyDown]);
 
   useEffect(() => {
-    if (search.length) {
+    if (query.length) {
       setSelectedIndex(0);
     }
-  }, [search.length, setSelectedIndex]);
+  }, [query.length, setSelectedIndex]);
 
   return (
     <div
       className={classnames("emoji-mart", {
-        active: visible,
+        active: emojiMode,
       })}
     >
       <div className="emoji-mart-scroll">
-        {searchResults}
-        <div className={classnames({ hidden: search.length > 1 })}>
-          <div className="emoji-mart-category">
-            <div className="emoji-mart-category-list">{grid}</div>
-          </div>
+        <div className="emoji-mart-category">
+          <div className="emoji-mart-category-list">{grid}</div>
         </div>
       </div>
       {selectedEmoji && <EmojiPreview emoji={selectedEmoji} />}

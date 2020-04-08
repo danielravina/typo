@@ -129,7 +129,8 @@ export default function () {
 
   return (
     <div className={`app ${colorTheme}`} ref={appRef}>
-      <EmojiPicker search={query} visible={emojiMode} />
+      <EmojiPicker />
+      {/* <MetaOptions /> */}
       <header />
       <div className="input-wrapper">
         <Input onEnterPress={onEnterPress} onChange={onChange} />
@@ -142,7 +143,6 @@ export default function () {
         </div>
         <footer>{clipboardText ? <i>Paste: {clipboardText}</i> : null}</footer>
       </div>
-      <MetaOptions />
     </div>
   );
 }
