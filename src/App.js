@@ -56,23 +56,32 @@ export default function () {
 
   const onChange = useCallback(
     async (value) => {
-      if (value.charAt(0) === ":") {
-        updateContext({ emojiMode: true });
-        changeHeight(EMOJI_HEIGHT);
-      } else {
-        updateContext({ emojiMode: false });
+      updateContext({ emojiMode: false, menuMode: false });
+      if (value.length === 0) {
+        changeHeight(DEFAULT_HEIGHT);
+        updateContext({ suggestion: "" });
+        return;
+      }
 
-        if (value.length === 0) {
-          changeHeight(DEFAULT_HEIGHT);
-          updateContext({ suggestion: "" });
-        } else {
+      switch (value.charAt(0)) {
+        case ":": {
+          updateContext({ emojiMode: true });
+          changeHeight(EMOJI_HEIGHT);
+          break;
+        }
+        case "/": {
+          updateContext({ menuMode: true });
+          changeHeight(EMOJI_HEIGHT);
+          break;
+        }
+        default:
           const googleResult = await fetchGoogle(value);
 
           updateContext({
+            clipboardText: null,
             suggestion: googleResult,
             selectionCount: googleResult.split(" ").length,
           });
-        }
       }
     },
     [fetchGoogle, updateContext]
