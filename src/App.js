@@ -118,7 +118,7 @@ export default function () {
         <span
           className={classnames("word", {
             selected: query.length && i === selectedIndex,
-            corrected: corrections.has(strip(word)),
+            corrected: corrections.has(strip(word.toLowerCase())),
           })}
         >
           {word}

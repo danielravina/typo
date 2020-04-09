@@ -7,6 +7,7 @@ import useEmojiContext from "../hooks/useEmojiContext";
 import "../styles/emoji-picker.scss";
 import { EMOJI_HEIGHT } from "../lib/constants";
 import useAppContext from "../hooks/useAppContext";
+import useKeyDown from "../hooks/useKeyDown";
 
 function EmojiPreview({ emoji }) {
   return (
@@ -152,6 +153,8 @@ export default function () {
     ]
   );
 
+  useKeyDown(onKeyDown);
+
   const grid = useMemo(() => {
     const rowCount = filteredGrid.length || fullGrid.length;
     return (
@@ -168,13 +171,6 @@ export default function () {
       </Grid>
     );
   }, [GRID_COLUMNS, filteredGrid.length, fullGrid.length]);
-
-  useEffect(() => {
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [onKeyDown]);
 
   useEffect(() => {
     if (query.length) {

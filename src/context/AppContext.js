@@ -17,6 +17,7 @@ const initialState = {
   emojiMode: false,
   menuMode: false,
   clipboardText: null,
+  dataSource: null,
 };
 
 const AppContext = React.createContext(initialState);
@@ -70,7 +71,7 @@ function AppProvider({ children }) {
     diff.forEach(({ added, value }) => {
       if (added) {
         setCorrections((corr) => {
-          corr.add(strip(value));
+          corr.add(strip(value.toLowerCase()));
           return corr;
         });
       }
