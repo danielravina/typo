@@ -116,33 +116,6 @@ body {
   overflow: hidden;
 }
 
-.suggestion-wrapper {
-  padding: 10px 6px;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  &.darken {
-    filter: brightness(0);
-  }
-}
-
-.suggestion-text {
-  align-items: center;
-  justify-content: center;
-  display: flex;
-  flex-wrap: wrap;
-  font-family: ProximaNova;
-  font-weight: 600;
-  color: var(--text);
-  font-size: 40px;
-  animation-duration: 0.2s;
-  &.reduced {
-    font-size: 32px;
-  }
-}
-
 .selected {
   position: relative;
   background: #e2e8f0;
@@ -242,12 +215,14 @@ footer {
   font-size: 13px;
 }
 
-.sliding-section {
+.sliding {
   position: absolute;
   bottom: 0;
+  background: white;
   top: 61px;
   transform: translateY(-100%);
-  transition: all 0s ease;
+  transition: all 0.2s ease;
+  width: 100%;
   &.active {
     transform: translateY(0);
   }

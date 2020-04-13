@@ -7,8 +7,8 @@ import useEmojiContext from "../hooks/useEmojiContext";
 import "../styles/emoji-picker.scss";
 import { EMOJI_HEIGHT } from "../lib/constants";
 import useAppContext from "../hooks/useAppContext";
-import useKeyDown from "../hooks/useKeyDown";
 
+import { WINDOW_WIDTH } from "../shared/constants";
 function EmojiPreview({ emoji }) {
   return (
     <div className="emoji-preview">
@@ -96,64 +96,66 @@ export default function () {
     );
   }, [allEmojies, filteredQueryResult, selectedIndex]);
 
-  const onKeyDown = useCallback(
-    (e) => {
-      if (!emojiMode) return;
-      const total = filteredQueryResult.length || allEmojies.length;
-      switch (e.key) {
-        case "ArrowDown": {
-          e.preventDefault();
-          if (selectedIndex + GRID_COLUMNS <= total - 1) {
-            setSelectedIndex(selectedIndex + GRID_COLUMNS);
-          }
-          break;
-        }
-        case "ArrowUp": {
-          e.preventDefault();
-          if (selectedIndex - GRID_COLUMNS >= 0) {
-            setSelectedIndex(selectedIndex - GRID_COLUMNS);
-          }
-          break;
-        }
-        case "ArrowRight": {
-          e.preventDefault();
-          if (selectedIndex === total - 1) {
-            setSelectedIndex(0);
-          } else {
-            setSelectedIndex(selectedIndex + 1);
-          }
-          break;
-        }
-        case "ArrowLeft": {
-          e.preventDefault();
-          if (selectedIndex <= 0) {
-            setSelectedIndex(total - 1);
-          } else {
-            setSelectedIndex(selectedIndex - 1);
-          }
-          break;
-        }
-        case "Enter": {
-          onSelect(selectedEmoji.native);
-          break;
-        }
-        default:
-          break;
-      }
-    },
-    [
-      GRID_COLUMNS,
-      allEmojies.length,
-      emojiMode,
-      filteredQueryResult.length,
-      onSelect,
-      selectedEmoji,
-      selectedIndex,
-      setSelectedIndex,
-    ]
-  );
-
-  useKeyDown(onKeyDown);
+  useEffect(() => {
+    // if (!emojiMode) return;
+    // const total = filteredQueryResult.length || allEmojies.length;
+    // switch (key) {
+    //   case "ArrowDown": {
+    //     setSelectedIndex((oldIndex) => {
+    //       if (oldIndex + GRID_COLUMNS <= total - 1) {
+    //         return oldIndex + GRID_COLUMNS;
+    //       }
+    //       return oldIndex;
+    //     });
+    //     break;
+    //   }
+    //   case "ArrowUp": {
+    //     setSelectedIndex((oldIndex) => {
+    //       if (oldIndex - GRID_COLUMNS >= 0) {
+    //         return oldIndex - GRID_COLUMNS;
+    //       }
+    //       return oldIndex;
+    //     });
+    //     break;
+    //   }
+    //   case "ArrowRight": {
+    //     setSelectedIndex((oldIndex) => {
+    //       if (oldIndex === total - 1) {
+    //         return 0;
+    //       } else {
+    //         return oldIndex + 1;
+    //       }
+    //     });
+    //     break;
+    //   }
+    //   case "ArrowLeft": {
+    //     setSelectedIndex((oldIndex) => {
+    //       if (oldIndex <= 0) {
+    //         return total - 1;
+    //       } else {
+    //         return oldIndex - 1;
+    //       }
+    //     });
+    //     break;
+    //   }
+    //   case "Enter": {
+    //     if (selectedEmoji) {
+    //       onSelect(selectedEmoji.native);
+    //     }
+    //     break;
+    //   }
+    //   default:
+    //     break;
+    // }
+  }, [
+    GRID_COLUMNS,
+    allEmojies.length,
+    emojiMode,
+    filteredQueryResult.length,
+    onSelect,
+    selectedEmoji,
+    setSelectedIndex,
+  ]);
 
   const grid = useMemo(() => {
     const rowCount = filteredGrid.length || fullGrid.length;
@@ -165,7 +167,7 @@ export default function () {
         columnWidth={36}
         rowHeight={35}
         height={EMOJI_HEIGHT}
-        width={377}
+        width={WINDOW_WIDTH}
       >
         {EmojiCell}
       </Grid>

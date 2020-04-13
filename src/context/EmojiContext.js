@@ -5,7 +5,7 @@ import { categories } from "emoji-mart/data/apple.json";
 import arrayChunk from "array-chunk";
 import randomcolor from "randomcolor";
 const EmojiContext = React.createContext({});
-const GRID_COLUMNS = 10;
+const GRID_COLUMNS = 16;
 
 function EmojiProvider({ children }) {
   const [selectedIndex, setSelectedIndex] = useState(0);

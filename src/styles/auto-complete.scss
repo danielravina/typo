@@ -1,0 +1,17 @@
+.suggestion-text {
+  margin: 0;
+  padding: 20px 6px;
+  min-height: 90px;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  flex-wrap: wrap;
+  font-family: ProximaNova;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 40px;
+  animation-duration: 0.2s;
+  &.reduced {
+    font-size: 32px;
+  }
+}

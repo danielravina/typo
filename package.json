@@ -8,7 +8,8 @@
     "electron-clipboard-extended": "github:danielravina/electron-clipboard-extended",
     "electron-default-menu": "^1.0.1",
     "menubar": "^7.1.0",
-    "robotjs": "^0.6.0"
+    "robotjs": "^0.6.0",
+    "usepubsub": "^1.0.2"
   },
   "scripts": {
     "start": "PORT=9000 react-scripts start",

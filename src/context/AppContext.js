@@ -1,23 +1,17 @@
 import React, { useEffect, useCallback, useState, useMemo } from "react";
 import { strip } from "../lib/utils";
-import titleCase from "ap-style-title-case";
 
-const Diff = require("diff"); // for some reason need 'require'
+import { modes } from "../lib/modes";
+import { usePubSub } from "usepubsub";
+const Diff = require("diff");
 
 const initialState = {
   query: "",
   suggestion: "",
-  isAltPressed: false,
-  isShiftPressed: false,
-  isMetaPressed: false,
-  selectedIndex: null,
+  selectedWordIndex: null,
   colorTheme: null,
-  chosenEmoji: null,
-  selectionCount: 0,
-  emojiMode: false,
-  menuMode: false,
   clipboardText: null,
-  dataSource: null,
+  modeKey: null,
 };
 
 const AppContext = React.createContext(initialState);
@@ -25,48 +19,37 @@ const AppContext = React.createContext(initialState);
 function AppProvider({ children }) {
   const [state, setState] = useState(initialState);
   const [corrections, setCorrections] = useState(new Set());
+  const { subscribe, publish } = usePubSub();
 
-  const suggestion = useMemo(() => {
-    if (state.isShiftPressed) {
-      return titleCase(state.suggestion);
-    } else {
-      return state.suggestion;
-    }
-  }, [state.isShiftPressed, state.suggestion]);
+  const currentMode = useMemo(() => {
+    return modes[state.modeKey];
+  }, [state.modeKey]);
 
   const suggestionWords = useMemo(() => {
-    return suggestion.split(" ");
-  }, [suggestion]);
+    return state.suggestion.split(" ");
+  }, [state.suggestion]);
 
   const finalResult = useMemo(() => {
-    if (state.selectedIndex === null) {
-      return suggestion;
+    if (state.selectedWordIndex === null) {
+      return state.suggestion;
     }
 
-    return suggestionWords[state.selectedIndex];
-  }, [state.selectedIndex, suggestion, suggestionWords]);
+    return suggestionWords[state.selectedWordIndex];
+  }, [state.selectedWordIndex, state.suggestion, suggestionWords]);
 
   const updateContext = useCallback((payload) => {
     setState((oldState) => ({ ...oldState, ...payload }));
   }, []);
 
   const resetContext = useCallback(() => {
-    updateContext({
-      query: "",
-      emojiMode: false,
-      suggestion: "",
-      isAltPressed: false,
-      isShiftPressed: false,
-      selectedIndex: null,
-      selectionCount: 0,
-      clipboardText: null,
-    });
+    updateContext({});
   }, [updateContext]);
 
   useEffect(() => {
     const diff = Diff.diffWords(state.query, state.suggestion, {
       ignoreCase: true,
     });
+
     setCorrections(new Set());
     diff.forEach(({ added, value }) => {
       if (added) {
@@ -82,12 +65,14 @@ function AppProvider({ children }) {
     <AppContext.Provider
       value={{
         ...state,
-        suggestion,
         updateContext,
         resetContext,
         corrections,
         suggestionWords,
         finalResult,
+        currentMode,
+        subscribe,
+        publish,
       }}
     >
       {children}

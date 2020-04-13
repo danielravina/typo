@@ -15,18 +15,17 @@ const clipboard = require("electron-clipboard-extended");
 const path = require("path");
 const robot = require("robotjs");
 const axios = require("axios");
+const { WINDOW_WIDTH } = require("./src/shared/constants");
 
 const isDev = process.env.NODE_ENV === "development";
-const DEFAULT_WIDTH = 377;
+
 const DEFAULT_HEIGHT = 61;
 let output = null;
 let win;
 let tray;
 let clip = {};
 
-if (!isDev) {
-  app.dock.hide();
-}
+app.dock.hide();
 
 systemPreferences.isTrustedAccessibilityClient(true);
 
@@ -38,7 +37,7 @@ function hideWindow() {
 }
 
 function changeHeight(height) {
-  win.setSize(DEFAULT_WIDTH, height);
+  win.setSize(WINDOW_WIDTH, height);
 }
 
 function showWindow() {
@@ -51,6 +50,10 @@ function showWindow() {
       clipboard.clear();
     }, 3000);
   }
+
+  win.setAlwaysOnTop(true, "floating");
+  win.setVisibleOnAllWorkspaces(true);
+  win.setFullScreenable(false);
   win.show();
   win.webContents.send("window-shown");
 }
@@ -70,7 +73,7 @@ function initTray() {
 
 function createWindow() {
   win = new BrowserWindow({
-    width: DEFAULT_WIDTH,
+    width: WINDOW_WIDTH,
     height: DEFAULT_HEIGHT,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -82,6 +85,7 @@ function createWindow() {
     frame: false,
     show: true,
     center: true,
+    fullScreenable: true,
   });
 
   if (isDev) {
