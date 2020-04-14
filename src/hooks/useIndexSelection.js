@@ -3,26 +3,35 @@ export default function (initialIndex = 0) {
   const [index, setIndex] = useState(initialIndex);
   const [upperBound, setUpperBound] = useState(Infinity);
 
-  const up = useCallback(() => {
-    if (index > upperBound) {
-      setIndex(0);
-    } else {
-      setIndex((oldIndex) => oldIndex + 1);
-    }
-  }, [index, upperBound]);
+  const incrementIndex = useCallback(() => {
+    setIndex((oldIndex) => {
+      if (oldIndex >= upperBound) {
+        return initialIndex;
+      } else {
+        return oldIndex + 1;
+      }
+    });
+  }, [initialIndex, upperBound]);
 
-  const down = useCallback(() => {
-    if (index < 0) {
-      setIndex(upperBound);
-    } else {
-      setIndex((oldIndex) => oldIndex - 1);
-    }
-  }, [index, upperBound]);
+  const decrementIndex = useCallback(() => {
+    setIndex((oldIndex) => {
+      if (oldIndex <= initialIndex) {
+        return upperBound;
+      } else {
+        return oldIndex - 1;
+      }
+    });
+  }, [initialIndex, upperBound]);
+
+  const resetIndex = useCallback(() => {
+    setIndex(initialIndex);
+  }, [initialIndex]);
 
   return {
     index,
     setUpperBound,
-    up,
-    down,
+    incrementIndex,
+    decrementIndex,
+    resetIndex,
   };
 }

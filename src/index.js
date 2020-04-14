@@ -5,18 +5,22 @@ import App from "./App";
 import { AppProvider } from "./context/AppContext";
 import { EmojiProvider } from "./context/EmojiContext";
 
-import { usePubSub } from "usepubsub";
+import { InputProvider } from "./context/InputContext";
+import { LocationProvider, createHistory } from "@reach/router";
+
+const history = createHistory(window);
 
 const Component = () => {
-  const { PubSubContext, publish, subscribe, unsubscribe } = usePubSub();
   return (
-    <PubSubContext.Provider value={{ publish, subscribe, unsubscribe }}>
+    <LocationProvider history={history}>
       <AppProvider>
-        <EmojiProvider>
-          <App />
-        </EmojiProvider>
+        <InputProvider>
+          <EmojiProvider>
+            <App />
+          </EmojiProvider>
+        </InputProvider>
       </AppProvider>
-    </PubSubContext.Provider>
+    </LocationProvider>
   );
 };
 

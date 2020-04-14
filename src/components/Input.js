@@ -1,50 +1,55 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useCallback, useRef, useEffect } from "react";
 import useAppContext from "../hooks/useAppContext";
 import { DEFAULT_HEIGHT } from "../lib/constants";
 import { changeHeight } from "../lib/utils";
-import { usePubSub } from "usepubsub";
+import useInputContext from "../hooks/useInputContext";
 
-export default function ({ onKeyDown, onKeyUp, onChange }) {
-  const input = useRef(null);
-  const { subscribe } = usePubSub();
-  const { suggestion, isAltPressed, updateContext } = useAppContext();
-  const [value, setValue] = useState("");
+export default React.forwardRef(({ onChange }, inputRef) => {
+  const { suggestion, isDefaultPrevented, publish } = useAppContext();
+  const { query, setQuery } = useInputContext();
 
-  const _onKeyDown = useCallback(
+  const onKeyDown = useCallback(
     (e) => {
-      // TAB IS A S PECIAL CASE
-      if (e.key === "Tab") {
+      const { key } = e;
+      if (key === "Tab" && suggestion.length) {
         e.preventDefault();
-        input.current.focus();
+        inputRef.current.focus();
         const val = suggestion;
-        input.current.value = "";
-        input.current.value = val;
-        setValue(val);
-        updateContext({ query: val });
+        inputRef.current.value = "";
+        inputRef.current.value = val;
+        setQuery(val);
+        return;
       }
-      onKeyDown(e);
+      if (key === "Backspace" && !query.length) {
+        window.ipcRenderer.send("hide");
+      }
+      if (isDefaultPrevented) {
+        e.preventDefault();
+      }
     },
-    [onKeyDown, suggestion, updateContext]
+    [inputRef, isDefaultPrevented, query.length, setQuery, suggestion]
   );
 
   const _onChange = useCallback(
     (e) => {
-      setValue(e.target.value);
-      const ee = { ...e };
-      // this is done to not lag the typing
+      const { value } = e.target;
+      setQuery(value);
       setTimeout(() => {
-        onChange(ee);
+        onChange(value);
       }, 0);
     },
-    [onChange]
+    [onChange, setQuery]
   );
 
   useEffect(() => {
     window.ipcRenderer.on("window-shown", () => {
-      input.current.focus();
+      inputRef.current.focus();
       changeHeight(DEFAULT_HEIGHT);
     });
-  }, [input]);
+    window.ipcRenderer.on("window-hidden", () => {
+      setQuery("");
+    });
+  }, [inputRef, setQuery]);
 
   return (
     <div className="input-wrapper">
@@ -52,13 +57,12 @@ export default function ({ onKeyDown, onKeyUp, onChange }) {
       <input
         placeholder={"HyperText"}
         autoFocus
-        ref={input}
+        ref={inputRef}
         className="main-input"
-        value={value}
+        value={query}
         onChange={_onChange}
-        onKeyDown={_onKeyDown}
-        onKeyUp={onKeyUp}
+        onKeyDown={onKeyDown}
       />
     </div>
   );
-}
+});

@@ -1,15 +1,16 @@
 import React, { useMemo, useState, useCallback } from "react";
 import { emojiIndex } from "emoji-mart";
-import useAppContext from "../hooks/useAppContext";
 import { categories } from "emoji-mart/data/apple.json";
 import arrayChunk from "array-chunk";
 import randomcolor from "randomcolor";
-const EmojiContext = React.createContext({});
+import useInputContext from "../hooks/useInputContext";
 const GRID_COLUMNS = 16;
+
+const EmojiContext = React.createContext({});
 
 function EmojiProvider({ children }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const { query } = useAppContext();
+  const { query } = useInputContext();
 
   const filteredQueryResult = useMemo(() => {
     if (query.length < 2) return []; // to include :

@@ -9,6 +9,7 @@ import { EMOJI_HEIGHT } from "../lib/constants";
 import useAppContext from "../hooks/useAppContext";
 
 import { WINDOW_WIDTH } from "../shared/constants";
+import useInputContext from "../hooks/useInputContext";
 function EmojiPreview({ emoji }) {
   return (
     <div className="emoji-preview">
@@ -67,6 +68,7 @@ const EmojiCell = React.memo(({ columnIndex, rowIndex, style }) => {
 });
 
 export default function () {
+  console.log("emoji component render");
   const {
     selectedIndex,
     setSelectedIndex,
@@ -77,7 +79,8 @@ export default function () {
     filteredQueryResult,
     allEmojies,
   } = useEmojiContext();
-  const { query } = useAppContext();
+
+  const { query } = useInputContext();
   const { emojiMode } = useAppContext();
   const gridRef = useRef();
 
