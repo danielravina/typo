@@ -1,11 +1,11 @@
-import React, { useCallback, useRef, useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import useAppContext from "../hooks/useAppContext";
 import { DEFAULT_HEIGHT } from "../lib/constants";
 import { changeHeight } from "../lib/utils";
 import useInputContext from "../hooks/useInputContext";
 
-export default React.forwardRef(({ onChange }, inputRef) => {
-  const { suggestion, isDefaultPrevented, publish } = useAppContext();
+export default React.forwardRef((props, inputRef) => {
+  const { suggestion, isDefaultPrevented } = useAppContext();
   const { query, setQuery } = useInputContext();
 
   const onKeyDown = useCallback(
@@ -30,15 +30,12 @@ export default React.forwardRef(({ onChange }, inputRef) => {
     [inputRef, isDefaultPrevented, query.length, setQuery, suggestion]
   );
 
-  const _onChange = useCallback(
+  const onChange = useCallback(
     (e) => {
       const { value } = e.target;
       setQuery(value);
-      setTimeout(() => {
-        onChange(value);
-      }, 0);
     },
-    [onChange, setQuery]
+    [setQuery]
   );
 
   useEffect(() => {
@@ -60,7 +57,7 @@ export default React.forwardRef(({ onChange }, inputRef) => {
         ref={inputRef}
         className="main-input"
         value={query}
-        onChange={_onChange}
+        onChange={onChange}
         onKeyDown={onKeyDown}
       />
     </div>

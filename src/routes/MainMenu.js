@@ -15,7 +15,6 @@ const OPTIONS = [
 
 export default function () {
   const { menuMode, updateCountext } = useAppContext();
-  const [selectedIndex, setSelectedIndex] = useState(0);
 
   useEffect(() => {
     // if (!menuMode) return;

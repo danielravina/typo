@@ -8,21 +8,22 @@ import { changeHeight } from "./lib/utils";
 import { DEFAULT_HEIGHT } from "./lib/constants";
 import useClipboard from "./hooks/useClipboard";
 import useAppContext from "./hooks/useAppContext";
-import { navigate, Router } from "@reach/router";
+import { useNavigate, Router, useLocation } from "@reach/router";
 import Input from "./components/Input";
 import useEmojiContext from "./hooks/useEmojiContext";
-import { useLocation } from "@reach/router";
-import { modes, MODE_KEYS } from "./lib/modes";
 
+import { modes, MODE_KEYS } from "./lib/modes";
 import AutoComplete from "./routes/AutoComplete";
 import EmojiPicker from "./routes/EmojiPicker";
 import MainMenu from "./routes/MainMenu";
+import useInputContext from "./hooks/useInputContext";
 
 export default function () {
+  const navigate = useNavigate();
   const inputRef = useRef(null);
   const processClipboard = useClipboard();
   const location = useLocation();
-
+  const { query } = useInputContext();
   useEffect(() => {
     inputRef.current.focus();
   }, [location]);
@@ -35,26 +36,26 @@ export default function () {
     clipboardText,
   } = useAppContext();
 
-  const onChange = useCallback(async (value) => {
-    if (value.length === 0) {
+  useEffect(() => {
+    if (query.length === 0) {
       navigate("");
       changeHeight(DEFAULT_HEIGHT);
       return;
     }
 
-    switch (value.charAt(0)) {
+    switch (query.charAt(0)) {
       case ":": {
-        navigate("emoji");
+        navigate("/emoji");
         break;
       }
       case "/": {
-        navigate("main-menu");
+        navigate("/main-menu");
         break;
       }
       default:
-        navigate("auto-complete");
+        navigate("/auto-complete");
     }
-  }, []);
+  }, [navigate, query]);
 
   useEffect(() => {
     window.ipcRenderer.on("clipboard-text", (e, text) => {
@@ -74,9 +75,10 @@ export default function () {
 
   return (
     <div className={`app ${colorTheme}`}>
-      <Input onChange={onChange} ref={inputRef} />
+      <Input ref={inputRef} />
       <Router>
         <AutoComplete default />
+        <EmojiPicker path="emoji" />
       </Router>
       {/* <footer>{clipboardText ? <i>Paste: {clipboardText}</i> : null}</footer> */}
     </div>
