@@ -21,6 +21,7 @@ function AppProvider({ children }) {
   }, [state.modeKey]);
 
   const suggestionWords = useMemo(() => {
+    if (!state.suggestion) return [];
     return state.suggestion.split(" ");
   }, [state.suggestion]);
 

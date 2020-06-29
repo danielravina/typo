@@ -162,25 +162,6 @@ export default function () {
     };
   }, [onKeyDown, onKeyUp]);
 
-  // const onEnterPress = useCallback(async () => {
-  //   if (clipboardText && query.length === 0) {
-  //     updateContext({
-  //       isLoading: true,
-  //     });
-
-  //     processClipboard(clipboardText.trim());
-  //   } else {
-  //     window.ipcRenderer.send("type", finalResult);
-  //     window.ipcRenderer.send("hide");
-  //   }
-  // }, [
-  //   clipboardText,
-  //   finalResult,
-  //   processClipboard,
-  //   query.length,
-  //   updateContext,
-  // ]);
-
   const suggestionBody = useMemo(() => {
     return suggestionWords.map((word, i) => (
       <React.Fragment key={word + i}>
@@ -206,7 +187,9 @@ export default function () {
         });
 
         setTimeout(() => {
-          changeHeight(DEFAULT_HEIGHT + ref.current.offsetHeight);
+          if (ref.current) {
+            changeHeight(DEFAULT_HEIGHT + ref.current.offsetHeight);
+          }
         }, 0);
       } else {
         updateContext({

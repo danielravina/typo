@@ -46,6 +46,7 @@ export default function () {
     switch (query.charAt(0)) {
       case ":": {
         navigate("/emoji");
+        changeHeight(400);
         break;
       }
       case "/": {

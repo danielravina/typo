@@ -68,7 +68,6 @@ const EmojiCell = React.memo(({ columnIndex, rowIndex, style }) => {
 });
 
 export default function () {
-  console.log("emoji component render");
   const {
     selectedIndex,
     setSelectedIndex,
@@ -87,11 +86,13 @@ export default function () {
   const selectedEmoji = useMemo(() => {
     let emojiName;
     if (filteredQueryResult.length) {
+      console.log("filter is ON");
       emojiName = filteredQueryResult[selectedIndex];
     } else {
+      console.log("filter is OFF");
       emojiName = allEmojies[selectedIndex];
     }
-
+    console.log({ emojiName });
     if (!emojiName) return null;
 
     return (
@@ -99,66 +100,67 @@ export default function () {
     );
   }, [allEmojies, filteredQueryResult, selectedIndex]);
 
+  const onKeyDown = useCallback(
+    ({ key }) => {
+      const total = filteredQueryResult.length || allEmojies.length;
+      switch (key) {
+        case "ArrowDown": {
+          setSelectedIndex((oldIndex) => {
+            if (oldIndex + GRID_COLUMNS <= total - 1) {
+              return oldIndex + GRID_COLUMNS;
+            }
+            return oldIndex;
+          });
+          break;
+        }
+        case "ArrowUp": {
+          setSelectedIndex((oldIndex) => {
+            if (oldIndex - GRID_COLUMNS >= 0) {
+              return oldIndex - GRID_COLUMNS;
+            }
+            return oldIndex;
+          });
+          break;
+        }
+        case "ArrowRight": {
+          setSelectedIndex((oldIndex) => {
+            if (oldIndex === total - 1) {
+              return 0;
+            } else {
+              return oldIndex + 1;
+            }
+          });
+          break;
+        }
+        case "ArrowLeft": {
+          setSelectedIndex((oldIndex) => {
+            if (oldIndex <= 0) {
+              return total - 1;
+            } else {
+              return oldIndex - 1;
+            }
+          });
+          break;
+        }
+        case "Enter": {
+          if (selectedEmoji) {
+            onSelect(selectedEmoji.native);
+          }
+          break;
+        }
+        default:
+          break;
+      }
+    },
+    [selectedIndex]
+  );
+
   useEffect(() => {
-    // if (!emojiMode) return;
-    // const total = filteredQueryResult.length || allEmojies.length;
-    // switch (key) {
-    //   case "ArrowDown": {
-    //     setSelectedIndex((oldIndex) => {
-    //       if (oldIndex + GRID_COLUMNS <= total - 1) {
-    //         return oldIndex + GRID_COLUMNS;
-    //       }
-    //       return oldIndex;
-    //     });
-    //     break;
-    //   }
-    //   case "ArrowUp": {
-    //     setSelectedIndex((oldIndex) => {
-    //       if (oldIndex - GRID_COLUMNS >= 0) {
-    //         return oldIndex - GRID_COLUMNS;
-    //       }
-    //       return oldIndex;
-    //     });
-    //     break;
-    //   }
-    //   case "ArrowRight": {
-    //     setSelectedIndex((oldIndex) => {
-    //       if (oldIndex === total - 1) {
-    //         return 0;
-    //       } else {
-    //         return oldIndex + 1;
-    //       }
-    //     });
-    //     break;
-    //   }
-    //   case "ArrowLeft": {
-    //     setSelectedIndex((oldIndex) => {
-    //       if (oldIndex <= 0) {
-    //         return total - 1;
-    //       } else {
-    //         return oldIndex - 1;
-    //       }
-    //     });
-    //     break;
-    //   }
-    //   case "Enter": {
-    //     if (selectedEmoji) {
-    //       onSelect(selectedEmoji.native);
-    //     }
-    //     break;
-    //   }
-    //   default:
-    //     break;
-    // }
-  }, [
-    GRID_COLUMNS,
-    allEmojies.length,
-    emojiMode,
-    filteredQueryResult.length,
-    onSelect,
-    selectedEmoji,
-    setSelectedIndex,
-  ]);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [onKeyDown]);
 
   const grid = useMemo(() => {
     const rowCount = filteredGrid.length || fullGrid.length;
