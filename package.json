@@ -21,7 +21,8 @@
     "eject": "react-scripts eject",
     "electron": "NODE_ENV=development electron public/electron.js",
     "pac": "yarn build && electron-builder --dir",
-    "icns": "cd ./public/electron/assets && ./gen.sh"
+    "icns": "cd ./public/electron/assets && ./gen.sh",
+    "cdn": "./bin/cdn.sh"
   },
   "postinstall": "electron-builder install-app-deps",
   "eslintConfig": {

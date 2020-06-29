@@ -12,10 +12,15 @@ const {
   systemPreferences,
 } = electron;
 
-new AutoLaunch({
+const autoLauncher = AutoLaunch({
   name: "Hyper Text",
   path: "/Applications/Hyper Text.app",
-}).enable();
+});
+
+autoLauncher.isEnabled().then((isEnabled) => {
+  if (isEnabled) return;
+  autoLauncher.enable();
+});
 
 const clipboard = require("electron-clipboard-extended");
 const path = require("path");
