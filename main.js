@@ -67,7 +67,7 @@ function toggleWindow() {
 }
 
 function initTray() {
-  tray = new Tray(path.join(__dirname, "assets", "IconTemplate.png"));
+  tray = new Tray(path.join(__dirname, "assets", "Icon.png"));
   tray.on("click", toggleWindow);
 }
 
