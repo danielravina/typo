@@ -1,0 +1,16 @@
+directories:
+  output: dist
+  buildResources: assets
+files:
+  - filter:
+      - build/**/*
+extraMetadata:
+  main: build/electron.js
+appId: co.hyper-text.www
+productName: Hyper Text
+copyright: 'Copyright © 2020 ${author}'
+icon: public/assets/Icon.icns
+mac:
+  category: public.app-category.developer-tools
+extends: react-cra
+electronVersion: 8.3.4

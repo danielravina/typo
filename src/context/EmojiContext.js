@@ -4,11 +4,12 @@ import { categories } from "emoji-mart/data/apple.json";
 import arrayChunk from "array-chunk";
 import randomcolor from "randomcolor";
 import useInputContext from "../hooks/useInputContext";
-const GRID_COLUMNS = 16;
+const GRID_COLUMNS = 13;
 
 const EmojiContext = React.createContext({});
 
-function EmojiProvider({ children }) {
+function EmojiProvider({ children, navigation }) {
+  console.log(navigation);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const { query } = useInputContext();
 

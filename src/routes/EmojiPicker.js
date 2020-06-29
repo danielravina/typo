@@ -1,12 +1,12 @@
 import React, { useMemo, useCallback, useEffect, useRef } from "react";
 import { FixedSizeGrid as Grid } from "react-window";
 import "emoji-mart/css/emoji-mart.css";
+import { useLocation } from "@reach/router";
 import { emojiIndex, Emoji } from "emoji-mart";
 import classnames from "classnames";
 import useEmojiContext from "../hooks/useEmojiContext";
 import "../styles/emoji-picker.scss";
 import { EMOJI_HEIGHT } from "../lib/constants";
-import useAppContext from "../hooks/useAppContext";
 
 import { WINDOW_WIDTH } from "../shared/constants";
 import useInputContext from "../hooks/useInputContext";
@@ -36,19 +36,45 @@ const EmojiCell = React.memo(({ columnIndex, rowIndex, style }) => {
     filteredQueryResult,
   } = useEmojiContext();
 
+  const li = useRef();
+
   const row = filteredGrid.length ? filteredGrid[rowIndex] : fullGrid[rowIndex];
+
+  const source = useMemo(
+    () => (filteredQueryResult.length ? filteredQueryResult : allEmojies),
+    [allEmojies, filteredQueryResult]
+  );
+
+  const emoji = row ? row[columnIndex] : null;
+
+  const isSelected = useMemo(() => source.indexOf(emoji) === selectedIndex, [
+    emoji,
+    selectedIndex,
+    source,
+  ]);
+
+  const scrollIntoView = useCallback(() => {
+    li.current.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "nearest",
+    });
+  }, []);
+
+  // when running
+  useEffect(() => {
+    if (isSelected) {
+      scrollIntoView();
+    }
+  }, [isSelected, scrollIntoView]);
 
   if (!row) return <div className="last-row" />;
 
-  const emoji = row[columnIndex];
-
   if (!emoji) return null;
-  const source = filteredQueryResult.length ? filteredQueryResult : allEmojies;
-
-  const isSelected = source.indexOf(emoji) === selectedIndex;
 
   return (
     <li
+      ref={li}
       style={{
         ...style,
         backgroundColor: isSelected ? colors[selectedIndex] : null,
@@ -68,6 +94,8 @@ const EmojiCell = React.memo(({ columnIndex, rowIndex, style }) => {
 });
 
 export default function () {
+  const location = useLocation();
+  console.log(location);
   const {
     selectedIndex,
     setSelectedIndex,
@@ -80,19 +108,16 @@ export default function () {
   } = useEmojiContext();
 
   const { query } = useInputContext();
-  const { emojiMode } = useAppContext();
+
   const gridRef = useRef();
 
   const selectedEmoji = useMemo(() => {
     let emojiName;
     if (filteredQueryResult.length) {
-      console.log("filter is ON");
       emojiName = filteredQueryResult[selectedIndex];
     } else {
-      console.log("filter is OFF");
       emojiName = allEmojies[selectedIndex];
     }
-    console.log({ emojiName });
     if (!emojiName) return null;
 
     return (
@@ -152,7 +177,14 @@ export default function () {
           break;
       }
     },
-    [selectedIndex]
+    [
+      GRID_COLUMNS,
+      allEmojies.length,
+      filteredQueryResult.length,
+      onSelect,
+      selectedEmoji,
+      setSelectedIndex,
+    ]
   );
 
   useEffect(() => {
@@ -188,7 +220,7 @@ export default function () {
   return (
     <div
       className={classnames("emoji-mart", {
-        active: emojiMode,
+        active: location.pathname === "/emoji",
       })}
     >
       <div className="emoji-mart-scroll">

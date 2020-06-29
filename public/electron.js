@@ -1,5 +1,6 @@
 const electron = require("electron");
 const defaultMenu = require("electron-default-menu");
+const AutoLaunch = require("auto-launch");
 const {
   Menu,
   ipcMain,
@@ -10,14 +11,19 @@ const {
   Tray,
   systemPreferences,
 } = electron;
+
+new AutoLaunch({
+  name: "Hyper Text",
+  path: "/Applications/Hyper Text.app",
+}).enable();
+
 const clipboard = require("electron-clipboard-extended");
-// const { version } = require("./package.json");
 const path = require("path");
 const robot = require("robotjs");
 const axios = require("axios");
-const { WINDOW_WIDTH } = require("./src/shared/constants");
+const WINDOW_WIDTH = 480;
 
-const isDev = process.env.NODE_ENV === "development";
+const isDev = require("electron-is-dev");
 
 const DEFAULT_HEIGHT = 61;
 let output = null;

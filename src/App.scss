@@ -102,8 +102,12 @@ body {
 }
 
 .emoji-mart {
+  display: none;
   border: none;
   z-index: 4;
+  &.active {
+    display: block;
+  }
 }
 
 .emoji-mart-scroll {

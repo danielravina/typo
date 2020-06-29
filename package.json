@@ -2,11 +2,14 @@
   "name": "hyper-text",
   "version": "0.1.0",
   "private": true,
-  "main": "main.js",
+  "main": "public/electron.js",
+  "author": "Daniel Ravina",
   "dependencies": {
+    "auto-launch": "^5.0.5",
     "axios": "^0.19.0",
     "electron-clipboard-extended": "github:danielravina/electron-clipboard-extended",
     "electron-default-menu": "^1.0.1",
+    "electron-is-dev": "^1.2.0",
     "menubar": "^7.1.0",
     "react-transition-group": "^4.3.0",
     "robotjs": "^0.6.0"
@@ -16,10 +19,11 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "electron": "NODE_ENV=development electron main.js",
-    "package": "bash bin/packager/darwin.sh",
-    "deliver": "bash bin/packager/deliver.sh"
+    "electron": "NODE_ENV=development electron public/electron.js",
+    "pac": "yarn build && electron-builder --dir",
+    "icns": "cd ./public/electron/assets && ./gen.sh"
   },
+  "postinstall": "electron-builder install-app-deps",
   "eslintConfig": {
     "extends": "react-app"
   },
@@ -44,6 +48,7 @@
     "classnames": "^2.2.6",
     "diff": "^4.0.2",
     "electron": "^8.2.0",
+    "electron-builder": "^22.7.0",
     "electron-packager": "^14.2.1",
     "electron-rebuild": "^1.8.6",
     "electron-reloader": "^1.0.1",

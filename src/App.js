@@ -1,27 +1,26 @@
 import "./App.scss";
 
-import React, { useRef, useCallback, useEffect, useMemo } from "react";
+import React, { useRef, useEffect } from "react";
 
 import "emoji-mart/css/emoji-mart.css";
 
 import { changeHeight } from "./lib/utils";
 import { DEFAULT_HEIGHT } from "./lib/constants";
-import useClipboard from "./hooks/useClipboard";
+
 import useAppContext from "./hooks/useAppContext";
 import { useNavigate, Router, useLocation } from "@reach/router";
 import Input from "./components/Input";
 import useEmojiContext from "./hooks/useEmojiContext";
 
-import { modes, MODE_KEYS } from "./lib/modes";
 import AutoComplete from "./routes/AutoComplete";
 import EmojiPicker from "./routes/EmojiPicker";
-import MainMenu from "./routes/MainMenu";
+
 import useInputContext from "./hooks/useInputContext";
 
 export default function () {
   const navigate = useNavigate();
   const inputRef = useRef(null);
-  const processClipboard = useClipboard();
+
   const location = useLocation();
   const { query } = useInputContext();
   useEffect(() => {
@@ -38,7 +37,7 @@ export default function () {
 
   useEffect(() => {
     if (query.length === 0) {
-      navigate("");
+      navigate("/");
       changeHeight(DEFAULT_HEIGHT);
       return;
     }
@@ -69,10 +68,17 @@ export default function () {
     });
 
     window.ipcRenderer.on("window-hidden", () => {
+      navigate("/");
       resetContext();
       setSelectedEmojiIndex(0);
     });
-  }, [clipboardText, resetContext, setSelectedEmojiIndex, updateContext]);
+  }, [
+    clipboardText,
+    navigate,
+    resetContext,
+    setSelectedEmojiIndex,
+    updateContext,
+  ]);
 
   return (
     <div className={`app ${colorTheme}`}>
