@@ -10,6 +10,7 @@
     "electron-clipboard-extended": "github:danielravina/electron-clipboard-extended",
     "electron-default-menu": "^1.0.1",
     "electron-is-dev": "^1.2.0",
+    "iohook": "^0.6.6",
     "menubar": "^7.1.0",
     "react-transition-group": "^4.3.0",
     "robotjs": "^0.6.0"
@@ -22,7 +23,9 @@
     "electron": "NODE_ENV=development electron public/electron.js",
     "pac": "yarn build && electron-builder --dir",
     "icns": "cd ./public/electron/assets && ./gen.sh",
-    "cdn": "./bin/cdn.sh"
+    "cdn": "./bin/cdn.sh",
+    "postinstall": "yarn rebuild",
+    "rebuild": "npm rebuild --runtime=electron --target=8.2.0 --disturl=https://atom.io/download/atom-shell --abi=72"
   },
   "postinstall": "electron-builder install-app-deps",
   "eslintConfig": {
@@ -38,6 +41,17 @@
       "last 1 chrome version",
       "last 1 firefox version",
       "last 1 safari version"
+    ]
+  },
+  "iohook": {
+    "targets": [
+      "electron-76"
+    ],
+    "platforms": [
+      "darwin"
+    ],
+    "arches": [
+      "x64"
     ]
   },
   "devDependencies": {

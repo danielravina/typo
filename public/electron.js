@@ -1,6 +1,16 @@
 const electron = require("electron");
 const defaultMenu = require("electron-default-menu");
 const AutoLaunch = require("auto-launch");
+const ioHook = require("iohook");
+
+// ioHook.on("keydown", (event) => {
+//   console.log(event); // { type: 'mousemove', x: 700, y: 400 }
+// });
+
+const id = ioHook.registerShortcut([44, 44], (keys) => {
+  console.log("Shortcut called with keys:", keys);
+});
+ioHook.start();
 const {
   Menu,
   ipcMain,
@@ -11,16 +21,6 @@ const {
   Tray,
   systemPreferences,
 } = electron;
-
-const autoLauncher = AutoLaunch({
-  name: "Hyper Text",
-  path: "/Applications/Hyper Text.app",
-});
-
-autoLauncher.isEnabled().then((isEnabled) => {
-  if (isEnabled) return;
-  autoLauncher.enable();
-});
 
 const clipboard = require("electron-clipboard-extended");
 const path = require("path");
@@ -36,7 +36,7 @@ let win;
 let tray;
 let clip = {};
 
-app.dock.hide();
+// app.dock.hide();
 
 systemPreferences.isTrustedAccessibilityClient(true);
 
@@ -121,9 +121,7 @@ function createWindow() {
 
   ipcMain.on("openExternal", async (e, { value, source }) => {
     if (source === "google.com") {
-      shell.openExternal(
-        `https://www.google.com/search?q=${value}&sourceid=chrome&ie=UTF-8`
-      );
+      shell.openExternal(`https://www.google.com/search?q=${value}&sourceid=chrome&ie=UTF-8`);
       return;
     }
 

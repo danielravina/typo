@@ -1,11 +1,5 @@
 import "../styles/auto-complete.scss";
-import React, {
-  useState,
-  useMemo,
-  useEffect,
-  useRef,
-  useCallback,
-} from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import classnames from "classnames";
 import { strip } from "../lib/utils";
 import useAppContext from "../hooks/useAppContext";
@@ -35,13 +29,9 @@ export default function () {
   const ref = useRef();
   const rawSuggestion = useRef();
 
-  const {
-    index,
-    setUpperBound,
-    incrementIndex,
-    decrementIndex,
-    resetIndex,
-  } = useIndexSelection(-1);
+  const { index, setUpperBound, incrementIndex, decrementIndex, resetIndex } = useIndexSelection(
+    -1
+  );
 
   const [wordSelectionMode, setWordSelectionMode] = useState(false);
 
@@ -181,7 +171,11 @@ export default function () {
   useEffect(() => {
     (async () => {
       if (query.length) {
-        const googleResult = await fetchGoogle(query);
+        let googleResult = await fetchGoogle(query);
+        const words = googleResult.split(" ");
+        if (!query.match(/\s+/g)) {
+          googleResult = words[0];
+        }
         updateContext({
           suggestion: googleResult,
         });

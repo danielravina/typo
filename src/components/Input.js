@@ -20,7 +20,7 @@ export default React.forwardRef((props, inputRef) => {
         setQuery(val);
         return;
       }
-      if (key === "Backspace" && !query.length) {
+      if ((key === "Escape" || key === "Backspace") && !query.length) {
         window.ipcRenderer.send("hide");
       }
       if (isDefaultPrevented) {
